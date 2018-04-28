@@ -22,8 +22,9 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.units import cm
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
 from reportlab.platypus.flowables import KeepTogether
+from reportlab.platypus.tableofcontents import TableOfContents
 
 
 logger = logging.getLogger('moodle2pdf')
@@ -58,16 +59,19 @@ def create_pdf_doc(glossar_files, output_file):
     :param output_file: file name for output PDF file
     """
     logger.info('Creating PDF file from Moodle Glossar...')
+    # define styles for page elements
+    heading_paragraph_style = ParagraphStyle(name='Normal', fontName='Helvetica', fontSize=16) 
+    question_paragraph_style = ParagraphStyle(name='Normal', fontName='Helvetica-Bold', fontSize=11) 
+    answer_paragraph_style = ParagraphStyle(name='Normal', fontName='Helvetica', fontSize=11)
+    centered = ParagraphStyle(name='centered', fontSize=30, leading=16, alignment=1, spaceAfter=20)
+    h1 = ParagraphStyle(name='Heading1', fontSize=14, leading=16)
+    h2 = ParagraphStyle(name='Heading2', fontSize=12, leading=14)
     # set title for document
     global TITLE
     if len(glossar_files) == 1:
         TITLE = os.path.splitext(os.path.basename(glossar_files[0]))[0]
     doc = SimpleDocTemplate(output_file, author=AUTHOR, title=TITLE)
-    story = [Spacer(1,0.75*cm)]
-    # define styles for page elements
-    heading_paragraph_style = ParagraphStyle(name='Normal', fontName='Helvetica', fontSize=16) 
-    question_paragraph_style = ParagraphStyle(name='Normal', fontName='Helvetica-Bold', fontSize=11) 
-    answer_paragraph_style = ParagraphStyle(name='Normal', fontName='Helvetica', fontSize=11)
+    story = []
     # build document
     for f in glossar_files:
         with open(f, 'r') as glossar_data:
@@ -75,6 +79,7 @@ def create_pdf_doc(glossar_files, output_file):
         # create heading
         heading = str(bs.find('NAME').get_text())
         story.append(Paragraph(heading, heading_paragraph_style))
+        # TODO: Set bookmark for heading in PDF file.
         story.append(Spacer(0, 1.0*cm))
         # build paragraphs for questions
         for e in bs.find('ENTRIES').find_all('ENTRY'):
@@ -83,6 +88,8 @@ def create_pdf_doc(glossar_files, output_file):
             story.append(KeepTogether([Paragraph(question, question_paragraph_style),
                                     Paragraph(answer, answer_paragraph_style),
                                     Spacer(0, 0.75*cm)]))
+            # TODO: Set bookmark for question in PDF file.
+        story.append(PageBreak())
     logger.info('Writing Moodle glossar to PDF file: {}.'.format(output_file))
     doc.build(story, onFirstPage=create_page_margins, onLaterPages=create_page_margins)
 
