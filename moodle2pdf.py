@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 """
 Creates a PDF file from Moodle glossar data exported into XML files. All XML
@@ -11,6 +12,7 @@ Date: 2018-04-27
 
 import os
 import sys
+import argparse
 import datetime
 import logging
 import logging.handlers
@@ -27,12 +29,14 @@ from reportlab.platypus.flowables import KeepTogether
 logger = logging.getLogger('moodle2pdf')
 
 
+LOG_FILENAME = 'moodle2pdf.log'
+DEFAULT_OUTPUT_FILENAME = 'FAQ.pdf'
 PAGE_WIDTH, PAGE_HEIGHT = A4
 BORDER_HORIZONTAL = 2.0*cm
 BORDER_VERTICAL = 1.5*cm
 TODAY = datetime.datetime.today().strftime('%d.%m.%Y')
 AUTHOR = 'Christian Wichmann'
-TITLE = 'FAQ - Logodidact und Moodle'
+TITLE = 'Häufig gestellte Fragen - Logodidact und Moodle'
 
 
 def create_page_margins(canvas, doc):
@@ -85,7 +89,6 @@ def create_pdf_doc(glossar_files, output_file):
 
 def create_logger():
     global logger
-    LOG_FILENAME = 'bbss.log'
     logger.setLevel(logging.DEBUG)
     log_to_file = logging.handlers.RotatingFileHandler(LOG_FILENAME, maxBytes=262144, backupCount=5)
     log_to_file.setLevel(logging.DEBUG)
@@ -95,11 +98,22 @@ def create_logger():
     logger.addHandler(log_to_screen)
 
 
-def make_pdf_from_glossar(combine_to_one_document=False):
-    filelist = [file for file in os.listdir(".") if file.endswith(".xml")]
-    logger.info('Found these XML Glossar files: {}.'.format(filelist))
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Converter for Moodle glossar files.')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-a', '--all', action='store_true',
+                       help='convert all XML files in directory')
+    group.add_argument('-f', '--files', action='store', nargs='+',
+                       help='provide a list of files to convert')
+    parser.add_argument('-c', '--combine', action='store_true',
+                        help='combine all glossar data into one PDF file')
+    args = parser.parse_args()
+    return args
+
+
+def make_pdf_from_glossar(filelist, combine_to_one_document=False):
     if combine_to_one_document:
-        output_file = 'FAQ.pdf'
+        output_file = DEFAULT_OUTPUT_FILENAME
         create_pdf_doc(filelist, output_file)
     else:
         for f in filelist:
@@ -109,4 +123,11 @@ def make_pdf_from_glossar(combine_to_one_document=False):
 
 if __name__ == '__main__':
     create_logger()
-    make_pdf_from_glossar(combine_to_one_document=False)
+    args = parse_arguments()
+    if args.all:
+        filelist = [file for file in os.listdir(".") if file.endswith(".xml")]
+        logger.info('Found these XML glossar files: {}.'.format(filelist))
+    elif args.files:
+        filelist = args.files
+        logger.info('Converting only these XML glossar files: {}.'.format(filelist))
+    make_pdf_from_glossar(filelist, combine_to_one_document=args.combine)
