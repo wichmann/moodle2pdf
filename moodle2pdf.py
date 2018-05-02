@@ -74,7 +74,7 @@ def create_pdf_doc(glossar_files, output_file):
     story = []
     # build document
     for f in glossar_files:
-        with open(f, 'r') as glossar_data:
+        with open(f, 'r', encoding='utf8') as glossar_data:
             bs = BeautifulSoup(glossar_data.read(), features="xml")
         # create heading
         heading = str(bs.find('NAME').get_text())
