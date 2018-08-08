@@ -12,6 +12,7 @@ Date: 2018-04-27
 
 import os
 import sys
+import html
 import argparse
 import datetime
 import logging
@@ -48,6 +49,16 @@ def create_page_margins(canvas, doc):
     canvas.restoreState()
 
 
+def handle_html_from_xml(string):
+    """
+	Unescapes HTML that was stored inside the XML tag.
+	"""
+	# TODO: Check whether to parse lists correctly and use ReportLab
+	#       Flowable to create them (e.g. <bullet> tag).
+	#       See also https://gist.github.com/enkore/2978752
+    return html.unescape(string).replace('<br>', '<br/>').replace('<ul>', '<br/>').replace('<li>', ' • ')
+
+
 def create_pdf_doc(glossar_files, output_file):
     """
     Creates a PDF file from Moodle glossar that were exported into the XML
@@ -62,7 +73,7 @@ def create_pdf_doc(glossar_files, output_file):
     # define styles for page elements
     heading_paragraph_style = ParagraphStyle(name='Normal', fontName='Helvetica', fontSize=16) 
     question_paragraph_style = ParagraphStyle(name='Normal', fontName='Helvetica-Bold', fontSize=11) 
-    answer_paragraph_style = ParagraphStyle(name='Normal', fontName='Helvetica', fontSize=11)
+    answer_paragraph_style = ParagraphStyle(name='Normal', fontName='Helvetica', fontSize=11, embeddedHyphenation=1, linkUnderline=1)
     centered = ParagraphStyle(name='centered', fontSize=30, leading=16, alignment=1, spaceAfter=20)
     h1 = ParagraphStyle(name='Heading1', fontSize=14, leading=16)
     h2 = ParagraphStyle(name='Heading2', fontSize=12, leading=14)
@@ -83,8 +94,8 @@ def create_pdf_doc(glossar_files, output_file):
         story.append(Spacer(0, 1.0*cm))
         # build paragraphs for questions
         for e in bs.find('ENTRIES').find_all('ENTRY'):
-            question = str(e.find('CONCEPT').get_text()).replace('<br>', '')
-            answer = str(e.find('DEFINITION').get_text()).replace('<br>', '')
+            question = handle_html_from_xml(e.find('CONCEPT').text)
+            answer = handle_html_from_xml(e.find('DEFINITION').text)
             story.append(KeepTogether([Paragraph(question, question_paragraph_style),
                                     Paragraph(answer, answer_paragraph_style),
                                     Spacer(0, 0.75*cm)]))
