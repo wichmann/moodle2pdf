@@ -41,6 +41,13 @@ AUTHOR = 'Christian Wichmann'
 TITLE = 'Häufig gestellte Fragen - Logodidact und Moodle'
 
 
+# fix some errors by adding attributes for image tags
+#from reportlab.platypus import paraparser
+#paraparser._imgAttrMap['alt'] = ('alt', None)
+#paraparser._imgAttrMap['role'] = ('role', None)
+#paraparser._imgAttrMap['class'] = ('class', None)
+
+
 def create_page_margins(canvas, doc):
     canvas.saveState()
     canvas.setFont('Helvetica', 10)
