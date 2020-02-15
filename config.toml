@@ -1,0 +1,15 @@
+
+[system]
+log_filename = 'moodle2pdf.log'
+
+[pdf]
+default_output_filename = 'FAQ.pdf'
+author = 'Christian Wichmann'
+title = 'Häufig gestellte Fragen - Logodidact und Moodle'
+border_horizontal = 2.0
+border_vertical = 1.5
+
+[moodle]
+key = ''
+url = ''
+endpoint = 'webservice/rest/server.php'
