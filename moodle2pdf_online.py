@@ -7,6 +7,7 @@ a PDF file with the formatted entries.
 
 import sys
 import logging
+import tempfile
 import logging.handlers
 from itertools import chain
 
@@ -40,12 +41,12 @@ def filter_html(bs):
                      if key not in REMOVE_ATTRIBUTES}
 
 
-def extract_images(bs):
+def extract_images(bs, directory):
     SCALING_FACTOR = 0.5
     image_list = []
     for tag in bs.findAll('img'):
         # get source link for images in entry
-        image_file = moodle.download_image(tag['src'])
+        image_file = moodle.download_image(tag['src'], directory)
         tag['src'] = image_file
         width = int(float(tag['width']) * SCALING_FACTOR)
         tag['width'] = str(width)
@@ -60,11 +61,11 @@ def extract_images(bs):
     return image_list
 
 
-def filter_for_xhtml2pdf(bs):
+def filter_for_xhtml2pdf(bs, directory):
     #SCALING_FACTOR = 0.5
     for tag in bs.findAll('img'):
         # get source link for images in entry
-        image_file = moodle.download_image(tag['src'])
+        image_file = moodle.download_image(tag['src'], directory)
         tag['src'] = image_file
         #width = int(float(tag['width']) * SCALING_FACTOR)
         #tag['width'] = str(width)
@@ -88,7 +89,7 @@ def substitute_lists(bs):
         print(list_tag)
 
 
-def build_pdf_for_glossary(glossary_id, glossary_name):
+def build_pdf_for_glossary(glossary_id, glossary_name, temp_dir):
     #question_paragraph_style = ParagraphStyle(name='Normal', fontName='Helvetica-Bold', fontSize=11)
     #answer_paragraph_style = ParagraphStyle(name='Normal', fontName='Helvetica', fontSize=11, embeddedHyphenation=1, linkUnderline=1)
     part = []
@@ -97,16 +98,16 @@ def build_pdf_for_glossary(glossary_id, glossary_name):
     heading =  document.pisaStory('<h1>{}</h1>'.format(glossary_name)).story
     part.extend(heading)
     # build paragraphs for questions
-    for question, answer in moodle.get_entries_for_glossary(glossary_id):
+    for question, answer in moodle.get_entries_for_glossary(glossary_id, temp_dir):
         #
         part.extend(document.pisaStory('<h2>{}</h2>'.format(question)).story)
         bs = BeautifulSoup(answer, features='html.parser')
-        filter_for_xhtml2pdf(bs)    
+        filter_for_xhtml2pdf(bs, temp_dir)
         part.extend(document.pisaStory(str(bs)).story)
         #
         #bs = BeautifulSoup(answer, features='html5lib')  # 'lxml', 'html5lib'
         #filter_html(bs)
-        #image_list = extract_images(bs)
+        #image_list = extract_images(bs, temp_dir)
         #substitute_lists(bs)
         #part.append(KeepTogether([Paragraph(question, question_paragraph_style),
         #                          Paragraph(str(bs), answer_paragraph_style),
@@ -126,10 +127,11 @@ def build_pdf_for_glossaries(glossaries, output_file):
     logger.info('Creating PDF file from Moodle Glossar...')
     document = SimpleDocTemplate(output_file, author=CONFIG['pdf']['author'], title=CONFIG['pdf']['title'])
     story = []
-    for glossary_id, glossary_name in glossaries:
-        story.extend(build_pdf_for_glossary(glossary_id, glossary_name))
-    logger.info('Writing Moodle glossar to PDF file: {}.'.format(output_file))
-    document.build(story, onFirstPage=create_page_margins, onLaterPages=create_page_margins)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        for glossary_id, glossary_name in glossaries:
+            story.extend(build_pdf_for_glossary(glossary_id, glossary_name, temp_dir))
+        logger.info('Writing Moodle glossar to PDF file: {}.'.format(output_file))
+        document.build(story, onFirstPage=create_page_margins, onLaterPages=create_page_margins)
 
 
 def make_pdf_from_glossar_online(glossaries, combine_to_one_document=False):
@@ -156,5 +158,7 @@ def create_logger():
 if __name__ == '__main__':
     create_logger()
     #args = parse_arguments()
+    CONFIG['moodle']['key'] = moodle.get_token_for_user('', '')
+    CONFIG['moodle']['url'] = ''
     course_id = 7
     make_pdf_from_glossar_online(moodle.get_glossaries_from_course(course_id), combine_to_one_document=True)

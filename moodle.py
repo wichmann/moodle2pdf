@@ -1,4 +1,5 @@
 
+import os
 import logging
 import urllib.parse
 
@@ -52,12 +53,19 @@ def call_mdl_function(fname, **kwargs):
     parameters.update(
         {"wstoken": CONFIG['moodle']['key'], 'moodlewsrestformat': 'json', "wsfunction": fname})
     response = requests.post(urllib.parse.urljoin(CONFIG['moodle']['url'], CONFIG['moodle']['endpoint']), parameters)
-    #response.encoding = 'utf-8' # r.apparent_encoding
-    #print(response.encoding, response.apparent_encoding)
+    logger.debug('Encoding: {}, Best guess: {}'.format(response.encoding, response.apparent_encoding))
     response = response.json()
     if type(response) == dict and response.get('exception'):
         raise SystemError("Error calling Moodle API\n", response)
     return response
+
+
+def get_token_for_user(username, password):
+    login_url = 'login/token.php?username={username}&password={password}&service=moodle_mobile_app'
+    token_url = urllib.parse.urljoin(CONFIG['moodle']['url'], login_url)
+    url = token_url.format(username=username, password=password)
+    r = requests.get(url)
+    return r.json()['token']
 
 
 def get_courses_for_user():
@@ -95,10 +103,10 @@ def get_glossaries_from_course(courseid):
     return id_list
 
 
-def get_entries_for_glossary(glossary_id):
+def get_entries_for_glossary(glossary_id, directory):
     entries = call_mdl_function('mod_glossary_get_entries_by_letter',
                    id=glossary_id, letter='ALL', limit=1000)
-    with open('loaded_data_{}.xml'.format(glossary_id), 'w') as f:
+    with open(os.path.join(directory, 'loaded_data_{}.xml'.format(glossary_id)), 'w') as f:
         f.write(str(entries))
     no = entries['count']
     logger.info('Found {} entries in glossary.'.format(no))
@@ -109,7 +117,7 @@ def get_entries_for_glossary(glossary_id):
         yield (e['concept'], e['definition'])
 
 
-def download_image(link):
+def download_image(link, directory):
     try:
         download_image.counter += 1
     except AttributeError:
@@ -118,7 +126,8 @@ def download_image(link):
     parameters = {"token": CONFIG['moodle']['key']}
     logger.info('Loading image from {}'.format(link))
     response = requests.post(link, parameters)
-    image_file_name_on_disk = 'image{}.png'.format(download_image.counter)
+    only_file_name = 'image{}.png'.format(download_image.counter)
+    image_file_name_on_disk = os.path.join(directory, only_file_name)
     with open(image_file_name_on_disk, 'wb') as image_on_disk:
         image_on_disk.write(response.content)
     return image_file_name_on_disk
