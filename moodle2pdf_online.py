@@ -21,11 +21,12 @@ from itertools import chain
 
 import requests
 from bs4 import BeautifulSoup
+from xhtml2pdf import document
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import cm
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Image
 from reportlab.platypus.flowables import KeepTogether
 from reportlab.platypus.tableofcontents import TableOfContents
 
@@ -77,7 +78,7 @@ def rest_api_parameters(in_args, prefix='', out_dict=None):
     return out_dict
 
 
-def call(fname, **kwargs):
+def call_mdl_function(fname, **kwargs):
     """Calls moodle API function with function name fname and keyword arguments.
 
     Source: https://github.com/mrcinv/moodle_api.py/blob/master/moodle_api.py
@@ -90,6 +91,8 @@ def call(fname, **kwargs):
     parameters.update(
         {"wstoken": KEY, 'moodlewsrestformat': 'json', "wsfunction": fname})
     response = requests.post(urllib.parse.urljoin(URL, ENDPOINT), parameters)
+    #response.encoding = 'utf-8' # r.apparent_encoding
+    #print(response.encoding, response.apparent_encoding)
     response = response.json()
     if type(response) == dict and response.get('exception'):
         raise SystemError("Error calling Moodle API\n", response)
@@ -113,7 +116,7 @@ def download_image(link):
 
 def get_glossaries_from_course(courseid):
     id_list = []
-    response = call('mod_glossary_get_glossaries_by_courses',
+    response = call_mdl_function('mod_glossary_get_glossaries_by_courses',
                     courseids=[courseid])
     for g in response['glossaries']:
         id_list.append((g['id'], g['name']))
@@ -121,11 +124,15 @@ def get_glossaries_from_course(courseid):
 
 
 def get_entries_for_glossary(glossary_id):
-    entries = call('mod_glossary_get_entries_by_letter',
-                   id=glossary_id, letter='ALL', limit=100)
+    entries = call_mdl_function('mod_glossary_get_entries_by_letter',
+                   id=glossary_id, letter='ALL', limit=1000)
     with open('loaded_data_{}.xml'.format(glossary_id), 'w') as f:
         f.write(str(entries))
     no = entries['count']
+    logger.info('Found {} entries in glossary.'.format(no))
+    if 'attachment' in entries and entries['attachment']:
+        for a in entries['attachments']:
+            logger.info('Found attachment for entry: {}'.format(a))
     for e in entries['entries']:
         yield (e['concept'], e['definition'])
 
@@ -139,21 +146,59 @@ def create_page_margins(canvas, doc):
     canvas.restoreState()
 
 
-def filter_html(text):
+def filter_html(bs):
     REMOVE_ATTRIBUTES = ['alt', 'rel', 'target', 'class', 'style']
-    # src is used for giving URLs for images!!!
-    bs = BeautifulSoup(text, features='html5lib')  # 'lxml')#'html5lib')
-    for tag in bs.findAll('img'):
-        print(tag)
-        download_link = tag['src']
-        tag['src'] = download_image(download_link)
-        tag['width'] = str(int(tag['width']) / 2)
-        tag['height'] = str(int(tag['height']) / 2)
-        # width="0.57in" height="50%%"
     for tag in chain(bs.findAll('img'), bs.findAll('a'), bs.findAll('span')):
         tag.attrs = {key: value for key, value in tag.attrs.items()
                      if key not in REMOVE_ATTRIBUTES}
-    return str(bs)
+
+
+def extract_images(bs):
+    SCALING_FACTOR = 0.5
+    image_list = []
+    for tag in bs.findAll('img'):
+        # get source link for images in entry
+        image_file = download_image(tag['src'])
+        tag['src'] = image_file
+        width = int(float(tag['width']) * SCALING_FACTOR)
+        tag['width'] = str(width)
+        height = int(float(tag['height']) * SCALING_FACTOR)
+        tag['height'] = str(height)
+        #tag['valign'] = 'super' # 'baseline', 'sub', 'super', 'top', 'text-top', 'middle', 'bottom', 'text-bottom', '0%', '2in'
+        #tag.parent['spaceAfter'] = '2cm'
+        tag.decompose()
+        i = Image(image_file, width=width, height=height)
+        i.vAlign = 'TOP'
+        image_list.append(i)
+    return image_list
+
+
+def filter_for_xhtml2pdf(bs):
+    #SCALING_FACTOR = 0.5
+    for tag in bs.findAll('img'):
+        # get source link for images in entry
+        image_file = download_image(tag['src'])
+        tag['src'] = image_file
+        #width = int(float(tag['width']) * SCALING_FACTOR)
+        #tag['width'] = str(width)
+        #height = int(float(tag['height']) * SCALING_FACTOR)
+        #tag['height'] = str(height)
+    for tag in bs.findAll('br'):
+        # remove all seperate line breaks and trust that all paragraphs are formatted with the <p> tag
+        tag.decompose()
+
+
+def substitute_lists(bs):
+    for list_tag in bs.findAll('ul'):
+        for tag in list_tag.findAll('li'):
+            bullet = bs.new_tag('p', bulletFontName='Symbol')
+            bullet.append(tag.text)
+            tag.clear()
+            tag.insert(0, bullet)
+            tag.append('<br>')
+            tag.name = 'p'
+        #list_tag.name = 'div'
+        print(list_tag)
 
 
 def build_pdf_for_glossary(glossary_id, glossary_name):
@@ -163,15 +208,23 @@ def build_pdf_for_glossary(glossary_id, glossary_name):
     part = []
     logger.info('Loading glossary: {} - {}'.format(glossary_id, glossary_name))
     # create heading
-    heading = glossary_name
-    part.append(Paragraph(heading, heading_paragraph_style))
-    part.append(Spacer(0, 1.0*cm))
+    heading =  document.pisaStory('<h1>{}</h1>'.format(glossary_name)).story
+    part.extend(heading)
     # build paragraphs for questions
     for question, answer in get_entries_for_glossary(glossary_id):
-        answer = filter_html(answer)
-        part.append(KeepTogether([Paragraph(question, question_paragraph_style),
-                                    Paragraph(answer, answer_paragraph_style),
-                                    Spacer(0, 0.75*cm)]))
+        #
+        part.extend(document.pisaStory('<h2>{}</h2>'.format(question)).story)
+        bs = BeautifulSoup(answer, features='html.parser')
+        filter_for_xhtml2pdf(bs)    
+        part.extend(document.pisaStory(str(bs)).story)
+        #
+        #bs = BeautifulSoup(answer, features='html5lib')  # 'lxml', 'html5lib'
+        #filter_html(bs)
+        #image_list = extract_images(bs)
+        #substitute_lists(bs)
+        #part.append(KeepTogether([Paragraph(question, question_paragraph_style),
+        #                          Paragraph(str(bs), answer_paragraph_style),
+        #                          Spacer(0, 0.25*cm), *image_list, Spacer(0, 0.75*cm)]))      
     part.append(PageBreak())
     return part
 
@@ -186,9 +239,7 @@ def build_pdf_for_glossaries(glossaries, output_file):
     """
     logger.info('Creating PDF file from Moodle Glossar...')
     # define styles for page elements
-    centered = ParagraphStyle(name='centered', fontSize=30, leading=16, alignment=1, spaceAfter=20)
-    h1 = ParagraphStyle(name='Heading1', fontSize=14, leading=16)
-    h2 = ParagraphStyle(name='Heading2', fontSize=12, leading=14)
+    #centered = ParagraphStyle(name='centered', fontSize=30, leading=16, alignment=1, spaceAfter=20)
     # set title for document
     global TITLE
     # if len(glossar_files) == 1:
