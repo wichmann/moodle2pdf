@@ -50,9 +50,11 @@ def call_mdl_function(fname, **kwargs):
                            courses = [{'id': 1, 'fullname': 'My favorite course'}])
     """
     parameters = rest_api_parameters(kwargs)
-    parameters.update(
-        {"wstoken": CONFIG['moodle']['key'], 'moodlewsrestformat': 'json', "wsfunction": fname})
-    response = requests.post(urllib.parse.urljoin(CONFIG['moodle']['url'], CONFIG['moodle']['endpoint']), parameters)
+    parameters.update( {'wstoken': CONFIG['moodle']['token'],
+                        'moodlewsrestformat': 'json',
+                        'wsfunction': fname} )
+    response = requests.post(urllib.parse.urljoin(CONFIG['moodle']['url'], CONFIG['moodle']['endpoint']),
+                             parameters)
     logger.debug('Encoding: {}, Best guess: {}'.format(response.encoding, response.apparent_encoding))
     response = response.json()
     if type(response) == dict and response.get('exception'):
@@ -123,7 +125,7 @@ def download_image(link, directory):
     except AttributeError:
         download_image.counter = 1
     # , 'moodlewsrestformat': 'json'} #, "wsfunction": fname}
-    parameters = {"token": CONFIG['moodle']['key']}
+    parameters = {"token": CONFIG['moodle']['token']}
     logger.info('Loading image from {}'.format(link))
     response = requests.post(link, parameters)
     only_file_name = 'image{}.png'.format(download_image.counter)

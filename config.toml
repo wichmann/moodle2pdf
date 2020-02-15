@@ -10,6 +10,6 @@ border_horizontal = 2.0
 border_vertical = 1.5
 
 [moodle]
-key = ''
+token = ''
 url = ''
 endpoint = 'webservice/rest/server.php'
