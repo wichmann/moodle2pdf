@@ -158,7 +158,9 @@ def create_logger():
 if __name__ == '__main__':
     create_logger()
     #args = parse_arguments()
-    CONFIG['moodle']['url'] = ''
-    CONFIG['moodle']['token'] = moodle.get_token_for_user('', '')
+    CONFIG['moodle']['url'] = 'https://moodle.nibis.de/bbs_osb/'
+    username = input('Username: ')
+    password = input('Password: ')
+    CONFIG['moodle']['token'] = moodle.get_token_for_user(username, password)
     course_id = 7
     make_pdf_from_glossar_online(moodle.get_glossaries_from_course(course_id), combine_to_one_document=True)

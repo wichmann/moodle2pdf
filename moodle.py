@@ -92,7 +92,7 @@ def get_content_for_course(courseid):
     result = []
     for c in content:
         for m in c['modules']:
-            result.append( (c['id'], c['name'], m['id'], m['name'], m['modname']) )
+            result.append( (c['id'], c['name'], m['id'], m['name'], m['modname'], m['visible'], m['uservisible'], m['visibleoncoursepage'], m['modicon'] ) )
     return result
 
 
