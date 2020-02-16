@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+
+"""
+Moodle2PDF loads data directly from Moodle glossaries and creates a PDF file
+with the formatted entries as a GUI version.
+"""
 
 import sys
 import logging
