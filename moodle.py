@@ -11,6 +11,8 @@ from config import CONFIG
 logger = logging.getLogger('moodle2pdf.moodle')
 
 
+############################## General functions ########################################
+
 def rest_api_parameters(in_args, prefix='', out_dict=None):
     """Transform dictionary/array structure to a flat dictionary, with key names
     defining the structure.
@@ -51,16 +53,32 @@ def call_mdl_function(fname, **kwargs):
     """
     parameters = rest_api_parameters(kwargs)
     parameters.update( {'wstoken': CONFIG['moodle']['token'],
-                        'moodlewsrestformat': 'json',
-                        'wsfunction': fname} )
+                        'moodlewsrestformat': 'json', 'wsfunction': fname} )
     response = requests.post(urllib.parse.urljoin(CONFIG['moodle']['url'], CONFIG['moodle']['endpoint']),
                              parameters)
-    logger.debug('Encoding: {}, Best guess: {}'.format(response.encoding, response.apparent_encoding))
+    logger.debug('Response Encoding: {}, Best guess: {}'.format(response.encoding, response.apparent_encoding))
     response = response.json()
     if type(response) == dict and response.get('exception'):
-        raise SystemError("Error calling Moodle API\n", response)
+        raise SystemError('Error calling Moodle API', response)
     return response
 
+
+def download_image(link, directory):
+    try:
+        download_image.counter += 1
+    except AttributeError:
+        download_image.counter = 1
+    parameters = {'token': CONFIG['moodle']['token']}
+    logger.info('Loading image from {}'.format(link))
+    response = requests.post(link, parameters)
+    only_file_name = 'image{}.png'.format(download_image.counter)
+    image_file_name_on_disk = os.path.join(directory, only_file_name)
+    with open(image_file_name_on_disk, 'wb') as image_on_disk:
+        image_on_disk.write(response.content)
+    return image_file_name_on_disk
+
+
+################################## User and Course functions ##################################
 
 def get_token_for_user(username, password):
     login_url = 'login/token.php?username={username}&password={password}&service=moodle_mobile_app'
@@ -96,6 +114,8 @@ def get_content_for_course(courseid):
     return result
 
 
+############################## Glossary functions ##############################
+
 def get_glossaries_from_course(courseid):
     id_list = []
     response = call_mdl_function('mod_glossary_get_glossaries_by_courses',
@@ -119,17 +139,75 @@ def get_entries_for_glossary(glossary_id, directory):
         yield (e['concept'], e['definition'])
 
 
-def download_image(link, directory):
-    try:
-        download_image.counter += 1
-    except AttributeError:
-        download_image.counter = 1
-    # , 'moodlewsrestformat': 'json'} #, "wsfunction": fname}
-    parameters = {"token": CONFIG['moodle']['token']}
-    logger.info('Loading image from {}'.format(link))
-    response = requests.post(link, parameters)
-    only_file_name = 'image{}.png'.format(download_image.counter)
-    image_file_name_on_disk = os.path.join(directory, only_file_name)
-    with open(image_file_name_on_disk, 'wb') as image_on_disk:
-        image_on_disk.write(response.content)
-    return image_file_name_on_disk
+################################ Wiki functions #################################
+
+def get_wikis_by_courses(courseid):
+    id_list = []
+    response = call_mdl_function('mod_wiki_get_wikis_by_courses', courseids=[courseid])
+    for w in response['wikis']:
+        id_list.append((w['id'], w['name'], w['firstpagetitle'], w['wikimode'], w['defaultformat'], w['visible']))
+    return id_list
+
+
+def get_subwikis(wikiid):
+    id_list = []
+    response = call_mdl_function('mod_wiki_get_subwikis', wikiid=wikiid)
+    for s in response['subwikis']:
+        id_list.append((s['id'], s['wikiid']))
+    return id_list
+
+
+def get_subwiki_pages(wikiid):
+    # Alternatively the API call "mod_wiki_get_page_contents" could be used.
+    id_list = []
+    response = call_mdl_function('mod_wiki_get_subwiki_pages ', wikiid=wikiid)
+    for p in response['pages']:
+        id_list.append((p['id'], p['title'], p['cachedcontent']))
+    return id_list
+
+############################## Miscellaneous functions ##############################
+
+def edit_module(action, module_id):
+    """
+    Performs an action on course module (change visibility, duplicate, delete, etc.)
+    
+    Parameter "action": hide, show, stealth, duplicate, delete, moveleft, moveright, group...
+    Parameter "sectionreturn" defaults to null
+    """
+    id_list = []
+    response = call_mdl_function('core_course_edit_module', action=action, id=module_id) 
+    print(response)
+    #for s in response['subwikis']:
+    #    id_list.append((s['id'], s['wikiid']))
+    return id_list
+
+
+def hide_module(module_id):
+    edit_module('hide', module_id)
+
+
+def show_module(module_id):
+    edit_module('show', module_id)
+
+
+def get_string(stringid, component, lang):
+    """
+    Return a translated string - similar to core get_string(), call
+
+    Parameter stringparams (Default to "Array ( ) ")
+
+    core_get_strings -> Return some translated strings - like several core get_string(), calls
+
+    Solution:  Adding a new external web service solved my issue?!?!??!
+    """
+    id_list = []
+    response = call_mdl_function('core_get_string', stringid=stringid, component=component, lang=lang)
+    print(response)
+    #for s in response['subwikis']:
+    #    id_list.append((s['id'], s['wikiid']))
+    return id_list
+
+
+#core_user_create_users
+#core_message_get_messages
+#core_course_edit_section    # Performs an action on course section (change visibility, set marker, delete)
