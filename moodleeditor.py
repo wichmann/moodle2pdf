@@ -48,7 +48,7 @@ class MoodleEditor(QtWidgets.QMainWindow):
         dlg = CredentialsDialog(self)
         if dlg.exec_():
             try:
-                CONFIG['moodle']['token'] = moodle.get_token_for_user(*dlg.getCredentials())
+                CONFIG['moodle']['token'] = moodle.get_token_for_user(*dlg.getCredentials(), 'wichmann_tools')
                 self.populateCourses()
                 return True
             except requests.exceptions.MissingSchema as e:
@@ -64,6 +64,7 @@ class MoodleEditor(QtWidgets.QMainWindow):
             courseNode.setText(0, c[1])
             courseNode.setData(0, QtCore.Qt.UserRole, c)
             #courseNode.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+            courseNode.setIcon(0, QtGui.QIcon('res/course.svg'))
         self.siteNode.setExpanded(True)
 
     def removeCourses(self):

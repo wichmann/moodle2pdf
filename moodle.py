@@ -80,10 +80,10 @@ def download_image(link, directory):
 
 ################################## User and Course functions ##################################
 
-def get_token_for_user(username, password):
-    login_url = 'login/token.php?username={username}&password={password}&service=moodle_mobile_app'
+def get_token_for_user(username, password, servicename='moodle_mobile_app'):
+    login_url = 'login/token.php?username={username}&password={password}&service={servicename}'
     token_url = urllib.parse.urljoin(CONFIG['moodle']['url'], login_url)
-    url = token_url.format(username=username, password=password)
+    url = token_url.format(username=username, password=password, servicename=servicename)
     r = requests.get(url)
     return r.json()['token']
 

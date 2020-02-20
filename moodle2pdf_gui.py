@@ -28,6 +28,7 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
         uic.loadUi('moodle2pdf.ui', self)
         
         self.siteNode = self.moodleItemsTreeWidget.topLevelItem(0)
+        self.siteNode.setIcon(0, QtGui.QIcon('res/home.svg'))
         self.addSlotsAndSignals()
         self.show()
 
@@ -55,6 +56,7 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
             courseNode.setText(0, c[1])
             courseNode.setData(0, QtCore.Qt.UserRole, c)
             #courseNode.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+            courseNode.setIcon(0, QtGui.QIcon('res/course.svg'))
         self.siteNode.setExpanded(True)
 
     def removeCourses(self):
@@ -98,6 +100,7 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
             glossaryNode.setText(0, g[1])
             glossaryNode.setData(0, QtCore.Qt.UserRole, g)
             glossaryNode.setCheckState(0, QtCore.Qt.Unchecked)
+            glossaryNode.setIcon(0, QtGui.QIcon('res/glossar.svg'))
         item.setExpanded(True)
 
     def exportGlossaries(self):
