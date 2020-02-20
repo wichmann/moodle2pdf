@@ -174,12 +174,9 @@ def edit_module(action, module_id):
     Parameter "action": hide, show, stealth, duplicate, delete, moveleft, moveright, group...
     Parameter "sectionreturn" defaults to null
     """
-    id_list = []
     response = call_mdl_function('core_course_edit_module', action=action, id=module_id) 
-    print(response)
-    #for s in response['subwikis']:
-    #    id_list.append((s['id'], s['wikiid']))
-    return id_list
+    new_html = response
+    return new_html
 
 
 def hide_module(module_id):

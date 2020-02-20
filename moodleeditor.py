@@ -16,7 +16,6 @@ from PyQt5 import QtGui, QtWidgets, Qt, uic, QtCore
 import moodle
 from config import CONFIG
 from gui import CredentialsDialog
-from moodle2pdf_cli import build_pdf_for_glossaries
 
 
 logger = logging.getLogger('moodleeditor')
@@ -100,11 +99,19 @@ class MoodleEditor(QtWidgets.QMainWindow):
             if not self.getCredentials():
                 self.setSiteURL('')
                 self.removeCourses()
-                QtWidgets.QMessageBox.warning(self, 'Error', 'Wrong site URL or credentials.', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+                QtWidgets.QMessageBox.warning(self, 'Error', 'Wrong site URL or credentials.',
+                                              QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def handleChange(self, item, column):
         if self.userCanChoose and column == 1:
-            print(item, column)
+            moodleItem = item.data(0, QtCore.Qt.UserRole)
+            id = moodleItem[2]
+            checked = item.checkState(1)
+            logger.info('Changed visibility of module {} to {}'.format(id, checked))
+            if checked > 0:
+                moodle.show_module(id)
+            else:
+                moodle.hide_module(id)
 
     def populateActivities(self, item, course_id):
         self.userCanChoose = False
@@ -112,7 +119,6 @@ class MoodleEditor(QtWidgets.QMainWindow):
         for a in activities:
             activitiesNode = QtWidgets.QTreeWidgetItem(item)
             activitiesNode.setText(0, '[{}] {}: {}'.format(a[1], a[4], a[3]))
-            #activitiesNode.setText(1, '{}'.format(a[5]))
             activitiesNode.setIcon(0, QtGui.QIcon(self.getIcon(a[8])))
             activitiesNode.setData(0, QtCore.Qt.UserRole, a)
             if a[5] == 1:
