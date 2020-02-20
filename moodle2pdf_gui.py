@@ -130,7 +130,7 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.warning(self, 'Error', 'You have to select some glossaries first.', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def showInfoDialog(self):
-        QtWidgets.QMessageBox.information(self, 'About...', 'Moodle2PDF from Christian Wichmann', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+        QtWidgets.QMessageBox.information(self, 'About...', 'Moodle2PDF from Christian Wichmann\nSource: https://github.com/wichmann/moodle2pdf', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
 def create_logger():
     global logger

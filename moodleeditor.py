@@ -138,7 +138,7 @@ class MoodleEditor(QtWidgets.QMainWindow):
                 return 'res/home.svg'
 
     def showInfoDialog(self):
-        QtWidgets.QMessageBox.information(self, 'About...', 'MoodleEditor from Christian Wichmann', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+        QtWidgets.QMessageBox.information(self, 'About...', 'MoodleEditor from Christian Wichmann\nSource: https://github.com/wichmann/moodle2pdf', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
 def create_logger():
     global logger
