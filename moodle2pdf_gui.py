@@ -16,7 +16,7 @@ from PyQt5 import QtGui, QtWidgets, Qt, uic, QtCore
 import moodle
 from config import CONFIG
 from gui import CredentialsDialog
-from moodle2pdf_cli import build_pdf_for_glossaries
+from pdf import build_pdf_for_glossaries_and_wikis
 
 
 logger = logging.getLogger('moodle2pdf')
@@ -77,6 +77,7 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
             logger.info('Loading glossaries for chosen course...')
             id, _ = item.data(0, QtCore.Qt.UserRole)
             self.populateGlossaries(item, id)
+            self.populateWikis(item, id)
 
     def showSiteDialog(self):
         DEFAULT_SITE_URL = 'https://moodle.nibis.de/bbs_osb/'
@@ -100,34 +101,51 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
             glossaryNode.setText(0, g[1])
             glossaryNode.setData(0, QtCore.Qt.UserRole, g)
             glossaryNode.setCheckState(0, QtCore.Qt.Unchecked)
+            glossaryNode.moodleType = 'glossary'
             glossaryNode.setIcon(0, QtGui.QIcon('res/glossar.svg'))
+        item.setExpanded(True)
+
+    def populateWikis(self, item, course_id):
+        wikis = moodle.get_wikis_by_courses(course_id)
+        for w in wikis:
+            wikiNode = QtWidgets.QTreeWidgetItem(item)
+            wikiNode.setText(0, w[1])
+            wikiNode.setData(0, QtCore.Qt.UserRole, w)
+            wikiNode.setCheckState(0, QtCore.Qt.Unchecked)
+            wikiNode.moodleType = 'wiki'
+            wikiNode.setIcon(0, QtGui.QIcon('res/wiki.svg'))
         item.setExpanded(True)
 
     def exportGlossaries(self):
         selectedGlossaries = []
+        selectedWikis = []
         for item in self.moodleItemsTreeWidget.findItems('', QtCore.Qt.MatchContains | QtCore.Qt.MatchRecursive, 0):
             if item.checkState(0) > 0:
-                glossaryItem = item.data(0, QtCore.Qt.UserRole)
-                logger.debug('Item selected: {}'.format(glossaryItem[1]))
-                selectedGlossaries.append(glossaryItem)
+                moodleItem = item.data(0, QtCore.Qt.UserRole)
+                if item.moodleType == 'wiki':
+                    logger.debug('Wiki selected: {}'.format(moodleItem[1]))
+                    selectedWikis.append(moodleItem)
+                elif item.moodleType == 'glossary':
+                    logger.debug('Glossary selected: {}'.format(moodleItem[1]))
+                    selectedGlossaries.append(moodleItem)
         if selectedGlossaries:
             if self.combineGlossariesCheckBox.checkState() > 0:
                 default_output_file = CONFIG['pdf']['default_output_filename']
                 options = QtWidgets.QFileDialog.Options()
                 #options |= QtWidgets.QFileDialog.DontUseNativeDialog
                 output_file, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as PDF File...', default_output_file,
-                                                                    'PDF File (*.pdf)', options=options)
+                                                                      'PDF File (*.pdf)', options=options)
                 if output_file:
-                    build_pdf_for_glossaries(selectedGlossaries, output_file)
+                    build_pdf_for_glossaries_and_wikis(selectedGlossaries, selectedWikis, output_file)
                     # open file with associated application (there is no really good
                     # solution, see https://stackoverflow.com/a/17317468 and
                     # https://stackoverflow.com/a/21987839)
                     webbrowser.open(output_file)
             else:
                 logger.error('Not implemented yet!')
-                QtWidgets.QMessageBox.warning(self, 'Error', 'This function is not implemented yet.', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+                QtWidgets.QMessageBox.warning(self, 'Error', 'Separate export is not implemented yet.', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
         else:
-            QtWidgets.QMessageBox.warning(self, 'Error', 'You have to select some glossaries first.', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.warning(self, 'Error', 'You have to select some modules first.', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def showInfoDialog(self):
         QtWidgets.QMessageBox.information(self, 'About...', 'Moodle2PDF from Christian Wichmann\nSource: https://github.com/wichmann/moodle2pdf', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
