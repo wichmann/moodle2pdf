@@ -37,7 +37,7 @@ def parse_arguments():
     group.add_argument('-i', '--id', help='id of a Moodle course')
     parser.add_argument('-a', '--apart', action='store_false', help='create seperate PDF files for each glossary')
     parser.add_argument('-o', '--output', help='output PDF file to write glossaries to')
-    parser.add_argument('-s', '--site', help='link to Moodle site', required=True)
+    parser.add_argument('-s', '--site', help='link to Moodle site including the trailing slash', required=True)
     parser.add_argument('-u', '--username', help='username for Moodle site')
     parser.add_argument('-p', '--password', help='password for Moodle site')
     parser.add_argument('-g', '--glossary', help='include Glossary modules', action='store_false')
@@ -59,7 +59,8 @@ if __name__ == '__main__':
     # handle link/id of glossary
     if args.link:
         import re
-        regex_glossary = r'.+mod\/glossary\/view\.php\?id=([0-9]{1,6})$'
+        #regex_glossary = r'.+mod\/glossary\/view\.php\?id=([0-9]{1,6})$'
+        # match with regex to extract course id (6 digits maximum!)
         regex = r'(.+)course\/view\.php\?id=([0-9]{1,6})$'
         match = re.match(regex, args.link, re.MULTILINE)
         if match:
@@ -78,6 +79,6 @@ if __name__ == '__main__':
     if args.site:
         CONFIG['moodle']['url'] = args.site
         CONFIG['moodle']['token'] = moodle.get_token_for_user(username, password)
-        pdf.make_pdf_from_glossar_online(moodle.get_glossaries_from_course(course_id), combine_to_one_document=args.apart)
+        pdf.make_pdf_from_moodle(moodle.get_glossaries_from_course(course_id), moodle.get_wikis_by_courses(53), combine_to_one_document=args.apart)
     else:
         logger.error('Site URL not valid!')

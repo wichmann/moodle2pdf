@@ -104,7 +104,23 @@ def build_pdf_for_glossary(glossary_id, glossary_name, temp_dir):
     return part
 
 
-def build_pdf_for_glossaries(glossaries, output_file):
+def build_pdf_for_wiki(wiki_id, wiki_name, temp_dir):
+    part = []
+    logger.info('Loading wiki: {} - {}'.format(wiki_id, wiki_name))
+    # create heading
+    heading =  document.pisaStory('<h1>{}</h1>'.format(wiki_name)).story
+    part.extend(heading)
+    # build paragraphs for questions
+    for page_id, page_name, page_content in moodle.get_subwiki_pages(wiki_id):
+        part.extend(document.pisaStory('<h2>{}</h2>'.format(page_name)).story)
+        bs = BeautifulSoup(page_content, features='html.parser')
+    #    filter_for_xhtml2pdf(bs, temp_dir)
+        part.extend(document.pisaStory(str(bs)).story)
+    part.append(PageBreak())
+    return part
+
+
+def build_pdf_for_glossaries_and_wikis(glossaries, wikis, output_file):
     """
     Creates a PDF file from Moodle glossaries accessed by Moodle Web Service.
 
@@ -116,16 +132,22 @@ def build_pdf_for_glossaries(glossaries, output_file):
     document = SimpleDocTemplate(output_file, author=CONFIG['pdf']['author'], title=CONFIG['pdf']['title'])
     story = []
     with tempfile.TemporaryDirectory() as temp_dir:
-        for glossary_id, glossary_name in glossaries:
-            story.extend(build_pdf_for_glossary(glossary_id, glossary_name, temp_dir))
+        if glossaries:
+            for glossary_id, glossary_name in glossaries:
+                logger.info('Adding glossary no. {}: {}'.format(glossary_id, glossary_name))
+                story.extend(build_pdf_for_glossary(glossary_id, glossary_name, temp_dir))
+        if wikis:
+            for wiki_id, wiki_name, _, _, _, _ in wikis:
+                logger.info('Adding wiki no. {}: {}'.format(wiki_id, wiki_name))
+                story.extend(build_pdf_for_wiki(wiki_id, wiki_name, temp_dir))
         logger.info('Writing Moodle glossar to PDF file: {}.'.format(output_file))
         document.build(story, onFirstPage=create_page_margins, onLaterPages=create_page_margins)
 
 
-def make_pdf_from_glossar_online(glossaries, combine_to_one_document=False):
+def make_pdf_from_moodle(glossaries=None, wikis=None, combine_to_one_document=False):
     if combine_to_one_document:
         output_file = CONFIG['pdf']['default_output_filename']
-        build_pdf_for_glossaries(glossaries, output_file)
+        build_pdf_for_glossaries_and_wikis(glossaries, wikis, output_file)
     else:
         logger.error('NOT IMPLEMENTED YET!')
         #output_file = '{}.pdf'.format(f)
