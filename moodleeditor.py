@@ -53,6 +53,9 @@ class MoodleEditor(QtWidgets.QMainWindow):
             except requests.exceptions.MissingSchema as e:
                 logger.error('Could not connect to Moodle site: {}'.format(e))
                 return False
+            except KeyError as e:
+                logger.error('Wrong credentials entered: {}'.format(e))
+                return False
 
     def populateCourses(self):
         # get all courses for current user
