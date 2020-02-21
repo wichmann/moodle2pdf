@@ -15,6 +15,7 @@ from PyQt5 import QtGui, QtWidgets, Qt, uic, QtCore
 
 import moodle
 from config import CONFIG
+from data import Section
 from gui import CredentialsDialog
 
 
@@ -80,7 +81,7 @@ class MoodleEditor(QtWidgets.QMainWindow):
         self.actionSet_Site.triggered.connect(self.showSiteDialog)
 
     def handleClick(self, item, column):
-        logger.debug('Double click on item {} in column {}.'.format(item, column))
+        logger.debug('Double click on item {} in column {}.'.format(item.text, column))
         if item == self.siteNode:
             logger.info('Changing site URL...')
             self.showSiteDialog()
@@ -105,31 +106,64 @@ class MoodleEditor(QtWidgets.QMainWindow):
                 QtWidgets.QMessageBox.warning(self, 'Error', 'Wrong site URL or credentials.',
                                               QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
-    def handleChange(self, item, column):
-        if self.userCanChoose and column == 1:
-            moodleItem = item.data(0, QtCore.Qt.UserRole)
-            id = moodleItem[2]
-            checked = item.checkState(1)
-            logger.info('Changed visibility of module {} to {}'.format(id, checked))
-            if checked > 0:
-                moodle.show_module(id)
-            else:
-                moodle.hide_module(id)
+    def changeVisibilityForModule(self, id, checked):
+        logger.info('Changed visibility of module {} to {}'.format(id, checked))
+        if checked > 0:
+            moodle.show_module(id)
+        else:
+            moodle.hide_module(id)
 
-    def populateActivities(self, item, course_id):
+    def handleChange(self, changedItem, column):
+        if self.userCanChoose and column == 1:
+            dataForChangedItem = changedItem.data(0, QtCore.Qt.UserRole)
+            if type(dataForChangedItem) == Section:
+                logger.info('Changing visibility of section {}.'.format(dataForChangedItem.name))
+                for i in range(changedItem.childCount()):
+                    child = changedItem.child(i)
+                    moodleItem = child.data(0, QtCore.Qt.UserRole)
+                    id = moodleItem[2]
+                    checked = changedItem.checkState(1)
+                    self.changeVisibilityForModule(id, checked)
+                    if checked > 0:
+                        child.setCheckState(1, QtCore.Qt.Checked)
+                    else:
+                        child.setCheckState(1, QtCore.Qt.Unchecked)
+            else:
+                id = dataForChangedItem[2]
+                checked = changedItem.checkState(1)
+                self.changeVisibilityForModule(id, checked)
+
+    def populateActivities(self, topItem, course_id):
         self.userCanChoose = False
         activities = moodle.get_content_for_course(course_id)
         for a in activities:
-            activitiesNode = QtWidgets.QTreeWidgetItem(item)
-            activitiesNode.setText(0, '[{}] {}: {}'.format(a[1], a[4], a[3]))
+            activitiesNode = QtWidgets.QTreeWidgetItem(self.findSectionItem(topItem, a[0], a[1]))
+            activitiesNode.setText(0, '{} ({})'.format(a[3], a[4]))
             activitiesNode.setIcon(0, QtGui.QIcon(self.getIcon(a[8])))
             activitiesNode.setData(0, QtCore.Qt.UserRole, a)
             if a[5] == 1:
                 activitiesNode.setCheckState(1, QtCore.Qt.Checked)
             elif a[5] == 0:
                 activitiesNode.setCheckState(1, QtCore.Qt.Unchecked)
-        item.setExpanded(True)
+        topItem.setExpanded(True)
         self.userCanChoose = True
+
+    def findSectionItem(self, topItem, sectionId, sectionName):
+        for i in range(topItem.childCount()):
+            # check all children of course node for section
+            c = topItem.child(i)
+            data = c.data(0, QtCore.Qt.UserRole)
+            if data.id == sectionId and data.name == sectionName:
+                return c
+        # create new section node, if it does not already exists
+        sectionNode = QtWidgets.QTreeWidgetItem(topItem)
+        sectionNode.setText(0, '{}'.format(sectionName))
+        sectionNode.setIcon(0, QtGui.QIcon('res/section.svg'))
+        sectionData = Section(sectionId, sectionName)
+        sectionNode.setData(0, QtCore.Qt.UserRole, sectionData)
+        sectionNode.setCheckState(1, QtCore.Qt.Checked)
+        sectionNode.setExpanded(True)
+        return sectionNode
 
     def getIcon(self, iconPath):
         if iconPath in self.iconMap:
