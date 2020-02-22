@@ -29,6 +29,8 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
         
         self.siteNode = self.moodleItemsTreeWidget.topLevelItem(0)
         self.siteNode.setIcon(0, QtGui.QIcon('res/home.svg'))
+
+        self.setWindowIcon(QtGui.QIcon('res/moodle.png'))
         self.addSlotsAndSignals()
         self.show()
 

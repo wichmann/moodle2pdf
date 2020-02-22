@@ -36,6 +36,7 @@ class MoodleEditor(QtWidgets.QMainWindow):
         header.setStretchLastSection(False)
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
 
+        self.setWindowIcon(QtGui.QIcon('res/moodle.png'))
         self.setupStatusBar()
         self.addSlotsAndSignals()
         self.show()

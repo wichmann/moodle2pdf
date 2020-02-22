@@ -42,5 +42,4 @@ nosetests.xml
 *.log*
 .idea
 *.bak
-*.png
 .vscode/
