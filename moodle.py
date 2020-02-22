@@ -88,8 +88,10 @@ def get_token_for_user(username, password, servicename='moodle_mobile_app'):
     return r.json()['token']
 
 
-def get_courses_for_user():
-    response = call_mdl_function('core_enrol_get_users_courses', userid=get_user_id())
+def get_courses_for_user(userid=None):
+    if not userid:
+        userid = get_user_id()
+    response = call_mdl_function('core_enrol_get_users_courses', userid=userid)
     # check whether user is teacher: core_enrol_get_enrolled_users
     return [(c['id'], c['fullname']) for c in response]
 
