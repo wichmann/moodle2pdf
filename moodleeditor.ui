@@ -10,6 +10,12 @@
     <height>800</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>800</width>
+    <height>800</height>
+   </size>
+  </property>
   <property name="windowTitle">
    <string>MoodleEditor</string>
   </property>
@@ -20,7 +26,7 @@
       <x>10</x>
       <y>10</y>
       <width>781</width>
-      <height>691</height>
+      <height>731</height>
      </rect>
     </property>
     <column>
@@ -41,19 +47,6 @@
       <set>ItemIsSelectable|ItemIsEnabled</set>
      </property>
     </item>
-   </widget>
-   <widget class="QPushButton" name="exportButton">
-    <property name="geometry">
-     <rect>
-      <x>700</x>
-      <y>710</y>
-      <width>86</width>
-      <height>32</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Export</string>
-    </property>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">

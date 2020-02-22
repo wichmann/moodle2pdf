@@ -33,12 +33,63 @@ class MoodleEditor(QtWidgets.QMainWindow):
         self.siteNode = self.moodleItemsTreeWidget.topLevelItem(0)
         self.siteNode.setIcon(0, QtGui.QIcon('res/home.svg'))
         header = self.moodleItemsTreeWidget.header()
-        #header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         header.setStretchLastSection(False)
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
 
+        self.setupStatusBar()
         self.addSlotsAndSignals()
         self.show()
+
+    def setupStatusBar(self):
+        self.statusBar().showMessage('MoodleEditor')
+        self.progressBar = QtWidgets.QProgressBar()
+        self.progressBar.setMaximum(100)
+        self.statusBar().addPermanentWidget(self.progressBar)
+        self.progressBar.setValue(0)
+
+    def addSlotsAndSignals(self):
+        self.userCanChoose = False
+        self.moodleItemsTreeWidget.itemDoubleClicked.connect(self.handleClick)
+        self.moodleItemsTreeWidget.itemChanged.connect(self.handleChange)
+        self.actionInfo.triggered.connect(self.showInfoDialog)
+        self.actionSet_Site.triggered.connect(self.showSiteDialog)
+
+    def handleClick(self, item, column):
+        logger.debug('Double click on item {} in column {}.'.format(item.text, column))
+        if item == self.siteNode:
+            logger.info('Changing site URL...')
+            self.showSiteDialog()
+        elif item.parent() == self.siteNode:
+            logger.info('Loading activities and material for chosen course...')
+            id, _ = item.data(0, QtCore.Qt.UserRole)
+            self.populateActivities(item, id)
+
+    def handleChange(self, changedItem, column):
+        if self.userCanChoose and column == 1:
+            dataForChangedItem = changedItem.data(0, QtCore.Qt.UserRole)
+            if type(dataForChangedItem) == Section:
+                self.statusBar().showMessage('Changing visibility for section...')
+                logger.info('Changing visibility of section {}.'.format(dataForChangedItem.name))
+                childCount = changedItem.childCount()
+                for i in range(childCount):
+                    child = changedItem.child(i)
+                    moodleItem = child.data(0, QtCore.Qt.UserRole)
+                    id = moodleItem[2]
+                    checked = changedItem.checkState(1)
+                    self.changeVisibilityForModule(id, checked)
+                    if checked > 0:
+                        child.setCheckState(1, QtCore.Qt.Checked)
+                    else:
+                        child.setCheckState(1, QtCore.Qt.Unchecked)
+                    self.progressBar.setValue(100 / childCount * (i + 1))
+            else:
+                self.statusBar().showMessage('Changing visibility for module...')
+                id = dataForChangedItem[2]
+                checked = changedItem.checkState(1)
+                self.changeVisibilityForModule(id, checked)
+            self.statusBar().showMessage('Visibility changed.')
+
+    ############################## Site wide ##############################
 
     def setSiteURL(self, url):
         CONFIG['moodle']['url'] = url
@@ -58,39 +109,8 @@ class MoodleEditor(QtWidgets.QMainWindow):
                 logger.error('Wrong credentials entered: {}'.format(e))
                 return False
 
-    def populateCourses(self):
-        # get all courses for current user
-        courses = moodle.get_courses_for_user()
-        # add items for all courses
-        for c in courses:
-            courseNode = QtWidgets.QTreeWidgetItem(self.siteNode)
-            courseNode.setText(0, c[1])
-            courseNode.setData(0, QtCore.Qt.UserRole, c)
-            #courseNode.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-            courseNode.setIcon(0, QtGui.QIcon('res/course.svg'))
-        self.siteNode.setExpanded(True)
-
-    def removeCourses(self):
-        self.siteNode.takeChildren()
-
-    def addSlotsAndSignals(self):
-        self.userCanChoose = False
-        self.moodleItemsTreeWidget.itemDoubleClicked.connect(self.handleClick)
-        self.moodleItemsTreeWidget.itemChanged.connect(self.handleChange)
-        self.actionInfo.triggered.connect(self.showInfoDialog)
-        self.actionSet_Site.triggered.connect(self.showSiteDialog)
-
-    def handleClick(self, item, column):
-        logger.debug('Double click on item {} in column {}.'.format(item.text, column))
-        if item == self.siteNode:
-            logger.info('Changing site URL...')
-            self.showSiteDialog()
-        elif item.parent() == self.siteNode:
-            logger.info('Loading activities and material for chosen course...')
-            id, _ = item.data(0, QtCore.Qt.UserRole)
-            self.populateActivities(item, id)
-
     def showSiteDialog(self):
+        self.statusBar().showMessage('Logging in to Moodle site...')
         DEFAULT_SITE_URL = 'https://moodle.nibis.de/bbs_osb/'
         text, okPressed = QtWidgets.QInputDialog.getText(self, 'Enter site URL', 'Site URL:',
                                                          QtWidgets.QLineEdit.Normal, DEFAULT_SITE_URL)
@@ -105,6 +125,29 @@ class MoodleEditor(QtWidgets.QMainWindow):
                 self.removeCourses()
                 QtWidgets.QMessageBox.warning(self, 'Error', 'Wrong site URL or credentials.',
                                               QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+            self.statusBar().showMessage('Logged in.')
+
+    ############################## Course wide ##############################
+
+    def populateCourses(self):
+        # get all courses for current user
+        courses = moodle.get_courses_for_user()
+        # add items for all courses
+        self.progressBar.setValue(0)
+        for i, c in enumerate(courses):
+            courseNode = QtWidgets.QTreeWidgetItem(self.siteNode)
+            courseNode.setText(0, c[1])
+            courseNode.setData(0, QtCore.Qt.UserRole, c)
+            #courseNode.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+            courseNode.setIcon(0, QtGui.QIcon('res/course.svg'))
+            self.progressBar.setValue(100 / len(courses) * (i + 1))
+            #QtGui.qApp.processEvents()
+        self.siteNode.setExpanded(True)
+
+    def removeCourses(self):
+        self.siteNode.takeChildren()
+
+    ############################## Module wide ##############################
 
     def changeVisibilityForModule(self, id, checked):
         logger.info('Changed visibility of module {} to {}'.format(id, checked))
@@ -113,30 +156,12 @@ class MoodleEditor(QtWidgets.QMainWindow):
         else:
             moodle.hide_module(id)
 
-    def handleChange(self, changedItem, column):
-        if self.userCanChoose and column == 1:
-            dataForChangedItem = changedItem.data(0, QtCore.Qt.UserRole)
-            if type(dataForChangedItem) == Section:
-                logger.info('Changing visibility of section {}.'.format(dataForChangedItem.name))
-                for i in range(changedItem.childCount()):
-                    child = changedItem.child(i)
-                    moodleItem = child.data(0, QtCore.Qt.UserRole)
-                    id = moodleItem[2]
-                    checked = changedItem.checkState(1)
-                    self.changeVisibilityForModule(id, checked)
-                    if checked > 0:
-                        child.setCheckState(1, QtCore.Qt.Checked)
-                    else:
-                        child.setCheckState(1, QtCore.Qt.Unchecked)
-            else:
-                id = dataForChangedItem[2]
-                checked = changedItem.checkState(1)
-                self.changeVisibilityForModule(id, checked)
-
     def populateActivities(self, topItem, course_id):
+        self.statusBar().showMessage('Loading all modules for course...')
         self.userCanChoose = False
         activities = moodle.get_content_for_course(course_id)
-        for a in activities:
+        self.progressBar.setValue(0)
+        for i, a in enumerate(activities):
             activitiesNode = QtWidgets.QTreeWidgetItem(self.findSectionItem(topItem, a[0], a[1]))
             activitiesNode.setText(0, '{} ({})'.format(a[3], a[4]))
             activitiesNode.setIcon(0, QtGui.QIcon(self.getIcon(a[8])))
@@ -145,8 +170,10 @@ class MoodleEditor(QtWidgets.QMainWindow):
                 activitiesNode.setCheckState(1, QtCore.Qt.Checked)
             elif a[5] == 0:
                 activitiesNode.setCheckState(1, QtCore.Qt.Unchecked)
+            self.progressBar.setValue(100 / len(activities) * (i + 1))
         topItem.setExpanded(True)
         self.userCanChoose = True
+        self.statusBar().showMessage('All modules loaded.')
 
     def findSectionItem(self, topItem, sectionId, sectionName):
         for i in range(topItem.childCount()):
