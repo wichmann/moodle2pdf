@@ -120,7 +120,7 @@ def build_pdf_for_wiki(wiki_id, wiki_name, temp_dir):
     return part
 
 
-def build_pdf_for_glossaries_and_wikis(glossaries, wikis, output_file):
+def build_pdf_for_glossaries_and_wikis(glossaries, wikis, output_file, callback=None):
     """
     Creates a PDF file from Moodle glossaries accessed by Moodle Web Service.
 
@@ -131,15 +131,25 @@ def build_pdf_for_glossaries_and_wikis(glossaries, wikis, output_file):
     logger.info('Creating PDF file from Moodle Glossar...')
     document = SimpleDocTemplate(output_file, author=CONFIG['pdf']['author'], title=CONFIG['pdf']['title'])
     story = []
+    no = 0
+    overall = len(glossaries) + len(wikis)
+    if callback and callable(callback):
+        callback(no, overall)
     with tempfile.TemporaryDirectory() as temp_dir:
         if glossaries:
             for glossary_id, glossary_name in glossaries:
                 logger.info('Adding glossary no. {}: {}'.format(glossary_id, glossary_name))
                 story.extend(build_pdf_for_glossary(glossary_id, glossary_name, temp_dir))
+                no += 1
+                if callback and callable(callback):
+                    callback(no, overall)
         if wikis:
             for wiki_id, wiki_name, _, _, _, _ in wikis:
                 logger.info('Adding wiki no. {}: {}'.format(wiki_id, wiki_name))
                 story.extend(build_pdf_for_wiki(wiki_id, wiki_name, temp_dir))
+                no += 1
+                if callback and callable(callback):
+                    callback(no, overall)
         logger.info('Writing Moodle glossar to PDF file: {}.'.format(output_file))
         document.build(story, onFirstPage=create_page_margins, onLaterPages=create_page_margins)
 

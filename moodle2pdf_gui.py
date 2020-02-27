@@ -31,8 +31,16 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
         self.siteNode.setIcon(0, QtGui.QIcon(get_resource_path('res/home.svg')))
 
         self.setWindowIcon(QtGui.QIcon(get_resource_path('res/moodle.png')))
+        self.setupStatusBar()
         self.addSlotsAndSignals()
         self.show()
+
+    def setupStatusBar(self):
+        self.statusBar().showMessage('Moodle2PDF')
+        self.progressBar = QtWidgets.QProgressBar()
+        self.progressBar.setMaximum(100)
+        self.statusBar().addPermanentWidget(self.progressBar)
+        self.progressBar.setValue(0)
 
     def setSiteURL(self, url):
         CONFIG['moodle']['url'] = url
@@ -48,17 +56,22 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
             except requests.exceptions.MissingSchema as e:
                 logger.error('Could not connect to Moodle site: {}'.format(e))
                 return False
+            except KeyError as e:
+                logger.error('Wrong credentials entered: {}'.format(e))
+                return False
 
     def populateCourses(self):
         # get all courses for current user
         courses = moodle.get_courses_for_user()
         # add items for all courses
-        for c in courses:
+        self.progressBar.setValue(0)
+        for i, c in enumerate(courses):
             courseNode = QtWidgets.QTreeWidgetItem(self.siteNode)
             courseNode.setText(0, c[1])
             courseNode.setData(0, QtCore.Qt.UserRole, c)
             #courseNode.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
             courseNode.setIcon(0, QtGui.QIcon(get_resource_path('res/course.svg')))
+            self.progressBar.setValue(100 / len(courses) * (i + 1))
         self.siteNode.setExpanded(True)
 
     def removeCourses(self):
@@ -82,6 +95,7 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
             self.populateWikis(item, id)
 
     def showSiteDialog(self):
+        self.statusBar().showMessage('Logging in to Moodle site...')
         DEFAULT_SITE_URL = 'https://moodle.nibis.de/bbs_osb/'
         text, okPressed = QtWidgets.QInputDialog.getText(self, 'Enter site URL', 'Site URL:',
                                                          QtWidgets.QLineEdit.Normal, DEFAULT_SITE_URL)
@@ -95,8 +109,10 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
                 self.setSiteURL('')
                 self.removeCourses()
                 QtWidgets.QMessageBox.warning(self, 'Error', 'Wrong site URL or credentials.', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+            self.statusBar().showMessage('Logged in.')
 
     def populateGlossaries(self, item, course_id):
+        self.statusBar().showMessage('Loading all glossaries for course...')
         glossaries = moodle.get_glossaries_from_course(course_id)
         for g in glossaries:
             glossaryNode = QtWidgets.QTreeWidgetItem(item)
@@ -105,9 +121,11 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
             glossaryNode.setCheckState(0, QtCore.Qt.Unchecked)
             glossaryNode.moodleType = 'glossary'
             glossaryNode.setIcon(0, QtGui.QIcon(get_resource_path('res/glossar.svg')))
+        self.statusBar().showMessage('All glossaries loaded.')
         item.setExpanded(True)
 
     def populateWikis(self, item, course_id):
+        self.statusBar().showMessage('Loading all wikis for course...')
         wikis = moodle.get_wikis_by_courses(course_id)
         for w in wikis:
             wikiNode = QtWidgets.QTreeWidgetItem(item)
@@ -116,6 +134,7 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
             wikiNode.setCheckState(0, QtCore.Qt.Unchecked)
             wikiNode.moodleType = 'wiki'
             wikiNode.setIcon(0, QtGui.QIcon(get_resource_path('res/wiki.svg')))
+        self.statusBar().showMessage('All wikis loaded.')
         item.setExpanded(True)
 
     def exportGlossaries(self):
@@ -138,11 +157,15 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
                 output_file, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as PDF File...', default_output_file,
                                                                       'PDF File (*.pdf)', options=options)
                 if output_file:
-                    build_pdf_for_glossaries_and_wikis(selectedGlossaries, selectedWikis, output_file)
-                    # open file with associated application (there is no really good
-                    # solution, see https://stackoverflow.com/a/17317468 and
+                    self.progressBar.setValue(0)
+                    self.statusBar().showMessage('Building PDF file...')
+                    build_pdf_for_glossaries_and_wikis(selectedGlossaries, selectedWikis, output_file,
+                                                       lambda no, overall: self.progressBar.setValue(100 / overall * no))
+                    # open file with associated application (there is no really
+                    # good solution, see https://stackoverflow.com/a/17317468 and
                     # https://stackoverflow.com/a/21987839)
                     webbrowser.open(output_file)
+                    self.statusBar().showMessage('Finished PDF file.')
             else:
                 logger.error('Not implemented yet!')
                 QtWidgets.QMessageBox.warning(self, 'Error', 'Separate export is not implemented yet.', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
