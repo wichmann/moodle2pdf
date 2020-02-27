@@ -15,7 +15,7 @@ from PyQt5 import QtGui, QtWidgets, Qt, uic, QtCore
 
 import moodle
 from config import CONFIG
-from gui import CredentialsDialog, get_resource_path
+from guilib import CredentialsDialog, get_resource_path
 from pdf import build_pdf_for_glossaries_and_wikis
 
 
