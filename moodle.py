@@ -130,7 +130,7 @@ def get_glossaries_from_course(courseid):
 def get_entries_for_glossary(glossary_id, directory):
     entries = call_mdl_function('mod_glossary_get_entries_by_letter',
                    id=glossary_id, letter='ALL', limit=1000)
-    with open(os.path.join(directory, 'loaded_data_{}.xml'.format(glossary_id)), 'w') as f:
+    with open(os.path.join(directory, 'loaded_data_{}.xml'.format(glossary_id)), 'w', encoding='utf8') as f:
         f.write(str(entries))
     no = entries['count']
     logger.info('Found {} entries in glossary.'.format(no))
