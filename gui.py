@@ -1,5 +1,28 @@
 
+import os
+import sys
+import logging
+
 from PyQt5 import QtWidgets
+
+
+logger = logging.getLogger('moodle2pdf.gui')
+
+
+def get_resource_path(relative_path):
+    """
+    Get absolute path to resource, works for dev and for PyInstaller.
+
+    Source: https://stackoverflow.com/a/13790741
+    """
+    logger.debug('Looking for resource: {}'.format(relative_path))
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except AttributeError:
+        base_path = os.path.abspath(".")
+    logger.debug('Resource should be at: {}'.format(base_path))
+    return os.path.join(base_path, relative_path)
 
 
 class CredentialsDialog(QtWidgets.QDialog):

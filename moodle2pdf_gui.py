@@ -9,13 +9,13 @@ import sys
 import logging
 import webbrowser
 import logging.handlers
-
+	
 import requests
 from PyQt5 import QtGui, QtWidgets, Qt, uic, QtCore
 
 import moodle
 from config import CONFIG
-from gui import CredentialsDialog
+from gui import CredentialsDialog, get_resource_path
 from pdf import build_pdf_for_glossaries_and_wikis
 
 
@@ -25,12 +25,12 @@ logger = logging.getLogger('moodle2pdf')
 class Moodle2PdfWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(Moodle2PdfWindow, self).__init__()
-        uic.loadUi('moodle2pdf.ui', self)
+        uic.loadUi(get_resource_path('moodle2pdf.ui'), self)
         
         self.siteNode = self.moodleItemsTreeWidget.topLevelItem(0)
-        self.siteNode.setIcon(0, QtGui.QIcon('res/home.svg'))
+        self.siteNode.setIcon(0, QtGui.QIcon(get_resource_path('res/home.svg')))
 
-        self.setWindowIcon(QtGui.QIcon('res/moodle.png'))
+        self.setWindowIcon(QtGui.QIcon(get_resource_path('res/moodle.png')))
         self.addSlotsAndSignals()
         self.show()
 
@@ -58,7 +58,7 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
             courseNode.setText(0, c[1])
             courseNode.setData(0, QtCore.Qt.UserRole, c)
             #courseNode.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-            courseNode.setIcon(0, QtGui.QIcon('res/course.svg'))
+            courseNode.setIcon(0, QtGui.QIcon(get_resource_path('res/course.svg')))
         self.siteNode.setExpanded(True)
 
     def removeCourses(self):
@@ -104,7 +104,7 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
             glossaryNode.setData(0, QtCore.Qt.UserRole, g)
             glossaryNode.setCheckState(0, QtCore.Qt.Unchecked)
             glossaryNode.moodleType = 'glossary'
-            glossaryNode.setIcon(0, QtGui.QIcon('res/glossar.svg'))
+            glossaryNode.setIcon(0, QtGui.QIcon(get_resource_path('res/glossar.svg')))
         item.setExpanded(True)
 
     def populateWikis(self, item, course_id):
@@ -115,7 +115,7 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
             wikiNode.setData(0, QtCore.Qt.UserRole, w)
             wikiNode.setCheckState(0, QtCore.Qt.Unchecked)
             wikiNode.moodleType = 'wiki'
-            wikiNode.setIcon(0, QtGui.QIcon('res/wiki.svg'))
+            wikiNode.setIcon(0, QtGui.QIcon(get_resource_path('res/wiki.svg')))
         item.setExpanded(True)
 
     def exportGlossaries(self):
