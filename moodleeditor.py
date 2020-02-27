@@ -16,7 +16,7 @@ from PyQt5 import QtGui, QtWidgets, Qt, uic, QtCore
 import moodle
 from config import CONFIG
 from data import Section
-from gui import CredentialsDialog
+from guilib import CredentialsDialog, get_resource_path
 
 
 logger = logging.getLogger('moodleeditor')
@@ -25,18 +25,18 @@ logger = logging.getLogger('moodleeditor')
 class MoodleEditor(QtWidgets.QMainWindow):
     def __init__(self):
         super(MoodleEditor, self).__init__()
-        uic.loadUi('moodleeditor.ui', self)
+        uic.loadUi(get_resource_path('moodleeditor.ui'), self)
         
         self.tempDir = tempfile.TemporaryDirectory()
         self.iconMap = {}
 
         self.siteNode = self.moodleItemsTreeWidget.topLevelItem(0)
-        self.siteNode.setIcon(0, QtGui.QIcon('res/home.svg'))
+        self.siteNode.setIcon(0, QtGui.QIcon(get_resource_path('res/home.svg')))
         header = self.moodleItemsTreeWidget.header()
         header.setStretchLastSection(False)
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
 
-        self.setWindowIcon(QtGui.QIcon('res/moodle.png'))
+        self.setWindowIcon(QtGui.QIcon(get_resource_path('res/moodle.png')))
         self.setupStatusBar()
         self.addSlotsAndSignals()
         self.show()
@@ -140,7 +140,7 @@ class MoodleEditor(QtWidgets.QMainWindow):
             courseNode.setText(0, c[1])
             courseNode.setData(0, QtCore.Qt.UserRole, c)
             #courseNode.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-            courseNode.setIcon(0, QtGui.QIcon('res/course.svg'))
+            courseNode.setIcon(0, QtGui.QIcon(get_resource_path('res/course.svg')))
             self.progressBar.setValue(100 / len(courses) * (i + 1))
             #QtGui.qApp.processEvents()
         self.siteNode.setExpanded(True)
@@ -186,7 +186,7 @@ class MoodleEditor(QtWidgets.QMainWindow):
         # create new section node, if it does not already exists
         sectionNode = QtWidgets.QTreeWidgetItem(topItem)
         sectionNode.setText(0, '{}'.format(sectionName))
-        sectionNode.setIcon(0, QtGui.QIcon('res/section.svg'))
+        sectionNode.setIcon(0, QtGui.QIcon(get_resource_path('res/section.svg')))
         sectionData = Section(sectionId, sectionName)
         sectionNode.setData(0, QtCore.Qt.UserRole, sectionData)
         sectionNode.setCheckState(1, QtCore.Qt.Checked)
@@ -206,7 +206,7 @@ class MoodleEditor(QtWidgets.QMainWindow):
                 self.iconMap[iconPath] = localFile
                 return localFile
             else:
-                return 'res/home.svg'
+                return get_resource_path('res/home.svg')
 
     def showInfoDialog(self):
         QtWidgets.QMessageBox.information(self, 'About...', 'MoodleEditor from Christian Wichmann\nSource: https://github.com/wichmann/moodle2pdf', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
