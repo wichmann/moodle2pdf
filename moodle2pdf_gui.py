@@ -149,7 +149,7 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
                 elif item.moodleType == 'glossary':
                     logger.debug('Glossary selected: {}'.format(moodleItem[1]))
                     selectedGlossaries.append(moodleItem)
-        if selectedGlossaries:
+        if selectedGlossaries or selectedWikis:
             if self.combineGlossariesCheckBox.checkState() > 0:
                 default_output_file = CONFIG['pdf']['default_output_filename']
                 options = QtWidgets.QFileDialog.Options()
