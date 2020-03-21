@@ -42,7 +42,7 @@ class MoodleEditor(QtWidgets.QMainWindow):
         self.show()
 
     def setupStatusBar(self):
-        self.statusBar().showMessage('MoodleEditor')
+        self.statusBar().showMessage(self.tr('MoodleEditor'))
         self.progressBar = QtWidgets.QProgressBar()
         self.progressBar.setMaximum(100)
         self.statusBar().addPermanentWidget(self.progressBar)
@@ -69,7 +69,7 @@ class MoodleEditor(QtWidgets.QMainWindow):
         if self.userCanChoose and column == 1:
             dataForChangedItem = changedItem.data(0, QtCore.Qt.UserRole)
             if type(dataForChangedItem) == Section:
-                self.statusBar().showMessage('Changing visibility for section...')
+                self.statusBar().showMessage(self.tr('Changing visibility for section...'))
                 logger.info('Changing visibility of section {}.'.format(dataForChangedItem.name))
                 childCount = changedItem.childCount()
                 for i in range(childCount):
@@ -84,17 +84,17 @@ class MoodleEditor(QtWidgets.QMainWindow):
                         child.setCheckState(1, QtCore.Qt.Unchecked)
                     self.progressBar.setValue(100 / childCount * (i + 1))
             else:
-                self.statusBar().showMessage('Changing visibility for module...')
+                self.statusBar().showMessage(self.tr('Changing visibility for module...'))
                 id = dataForChangedItem[2]
                 checked = changedItem.checkState(1)
                 self.changeVisibilityForModule(id, checked)
-            self.statusBar().showMessage('Visibility changed.')
+            self.statusBar().showMessage(self.tr('Visibility changed.'))
 
     ############################## Site wide ##############################
 
     def setSiteURL(self, url):
         CONFIG['moodle']['url'] = url
-        self.siteNode.setText(0, 'Moodle Site ({})'.format(CONFIG['moodle']['url']))
+        self.siteNode.setText(0, self.tr('Moodle Site ({})').format(CONFIG['moodle']['url']))
 
     def getCredentials(self):
         dlg = CredentialsDialog(self)
@@ -111,9 +111,9 @@ class MoodleEditor(QtWidgets.QMainWindow):
                 return False
 
     def showSiteDialog(self):
-        self.statusBar().showMessage('Logging in to Moodle site...')
+        self.statusBar().showMessage(self.tr('Logging in to Moodle site...'))
         DEFAULT_SITE_URL = 'https://moodle.nibis.de/bbs_osb/'
-        text, okPressed = QtWidgets.QInputDialog.getText(self, 'Enter site URL', 'Site URL:',
+        text, okPressed = QtWidgets.QInputDialog.getText(self, self.tr('Enter site URL'), self.tr('Site URL:'),
                                                          QtWidgets.QLineEdit.Normal, DEFAULT_SITE_URL)
         # check for valid URLs via RegEx (see https://daringfireball.net/2010/07/improved_regex_for_matching_urls and https://gist.github.com/gruber/8891611)
         # reg_ex = QtCore.QRegExp("""(?i)\b((?:https:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)/)(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)\b/?(?!@)))""")
@@ -124,9 +124,9 @@ class MoodleEditor(QtWidgets.QMainWindow):
             if not self.getCredentials():
                 self.setSiteURL('')
                 self.removeCourses()
-                QtWidgets.QMessageBox.warning(self, 'Error', 'Wrong site URL or credentials.',
+                QtWidgets.QMessageBox.warning(self, self.tr('Error'), self.tr('Wrong site URL or credentials.'),
                                               QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-            self.statusBar().showMessage('Logged in.')
+            self.statusBar().showMessage(self.tr('Logged in.'))
 
     ############################## Course wide ##############################
 
@@ -158,7 +158,7 @@ class MoodleEditor(QtWidgets.QMainWindow):
             moodle.hide_module(id)
 
     def populateActivities(self, topItem, course_id):
-        self.statusBar().showMessage('Loading all modules for course...')
+        self.statusBar().showMessage(self.tr('Loading all modules for course...'))
         self.userCanChoose = False
         activities = moodle.get_content_for_course(course_id)
         self.progressBar.setValue(0)
@@ -174,7 +174,7 @@ class MoodleEditor(QtWidgets.QMainWindow):
             self.progressBar.setValue(100 / len(activities) * (i + 1))
         topItem.setExpanded(True)
         self.userCanChoose = True
-        self.statusBar().showMessage('All modules loaded.')
+        self.statusBar().showMessage(self.tr('All modules loaded.'))
 
     def findSectionItem(self, topItem, sectionId, sectionName):
         for i in range(topItem.childCount()):
@@ -209,7 +209,8 @@ class MoodleEditor(QtWidgets.QMainWindow):
                 return get_resource_path('res/home.svg')
 
     def showInfoDialog(self):
-        QtWidgets.QMessageBox.information(self, 'About...', 'MoodleEditor from Christian Wichmann\nSource: https://github.com/wichmann/moodle2pdf', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+        QtWidgets.QMessageBox.information(self, self.tr('About...'), self.tr('MoodleEditor from Christian Wichmann\nSource: https://github.com/wichmann/moodle2pdf'),
+                                          QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
 def create_logger():
     global logger
@@ -225,5 +226,8 @@ def create_logger():
 if __name__ == '__main__':
     create_logger()
     app = QtWidgets.QApplication(sys.argv)
+    translator = QtCore.QTranslator()
+    translator.load('translate/{}.qm'.format(QtCore.QLocale.system().name()))
+    app.installTranslator(translator)
     window = MoodleEditor()
     sys.exit(app.exec_())

@@ -3,6 +3,15 @@
 """
 Moodle2PDF loads data directly from Moodle glossaries and creates a PDF file
 with the formatted entries as a GUI version.
+
+To create or update a translation file:
+
+    pylupdate5 moodle2pdf_gui.py moodle2pdf.ui moodleeditor.ui moodleeditor.py guilib.py -ts translate/de_DE.ts 
+
+To finish a translation:
+
+    lrelease translate/de_DE.ts 
+
 """
 
 import sys
@@ -44,7 +53,7 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
 
     def setSiteURL(self, url):
         CONFIG['moodle']['url'] = url
-        self.siteNode.setText(0, 'Moodle Site ({})'.format(CONFIG['moodle']['url']))
+        self.siteNode.setText(0, self.tr('Moodle Site ({})').format(CONFIG['moodle']['url']))
 
     def getCredentials(self):
         dlg = CredentialsDialog(self)
@@ -95,9 +104,9 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
             self.populateWikis(item, id)
 
     def showSiteDialog(self):
-        self.statusBar().showMessage('Logging in to Moodle site...')
+        self.statusBar().showMessage(self.tr('Logging in to Moodle site...'))
         DEFAULT_SITE_URL = 'https://moodle.nibis.de/bbs_osb/'
-        text, okPressed = QtWidgets.QInputDialog.getText(self, 'Enter site URL', 'Site URL:',
+        text, okPressed = QtWidgets.QInputDialog.getText(self, self.tr('Enter site URL'), self.tr('Site URL:'),
                                                          QtWidgets.QLineEdit.Normal, DEFAULT_SITE_URL)
         # check for valid URLs via RegEx (see https://daringfireball.net/2010/07/improved_regex_for_matching_urls and https://gist.github.com/gruber/8891611)
         # reg_ex = QtCore.QRegExp("""(?i)\b((?:https:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)/)(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)\b/?(?!@)))""")
@@ -108,11 +117,11 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
             if not self.getCredentials():
                 self.setSiteURL('')
                 self.removeCourses()
-                QtWidgets.QMessageBox.warning(self, 'Error', 'Wrong site URL or credentials.', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-            self.statusBar().showMessage('Logged in.')
+                QtWidgets.QMessageBox.warning(self, self.tr('Error'), self.tr('Wrong site URL or credentials.'), QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+            self.statusBar().showMessage(self.tr('Logged in.'))
 
     def populateGlossaries(self, item, course_id):
-        self.statusBar().showMessage('Loading all glossaries for course...')
+        self.statusBar().showMessage(self.tr('Loading all glossaries for course...'))
         glossaries = moodle.get_glossaries_from_course(course_id)
         for g in glossaries:
             glossaryNode = QtWidgets.QTreeWidgetItem(item)
@@ -121,11 +130,11 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
             glossaryNode.setCheckState(0, QtCore.Qt.Unchecked)
             glossaryNode.moodleType = 'glossary'
             glossaryNode.setIcon(0, QtGui.QIcon(get_resource_path('res/glossar.svg')))
-        self.statusBar().showMessage('All glossaries loaded.')
+        self.statusBar().showMessage(self.tr('All glossaries loaded.'))
         item.setExpanded(True)
 
     def populateWikis(self, item, course_id):
-        self.statusBar().showMessage('Loading all wikis for course...')
+        self.statusBar().showMessage(self.tr('Loading all wikis for course...'))
         wikis = moodle.get_wikis_by_courses(course_id)
         for w in wikis:
             wikiNode = QtWidgets.QTreeWidgetItem(item)
@@ -134,7 +143,7 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
             wikiNode.setCheckState(0, QtCore.Qt.Unchecked)
             wikiNode.moodleType = 'wiki'
             wikiNode.setIcon(0, QtGui.QIcon(get_resource_path('res/wiki.svg')))
-        self.statusBar().showMessage('All wikis loaded.')
+        self.statusBar().showMessage(self.tr('All wikis loaded.'))
         item.setExpanded(True)
 
     def exportGlossaries(self):
@@ -154,26 +163,27 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
                 default_output_file = CONFIG['pdf']['default_output_filename']
                 options = QtWidgets.QFileDialog.Options()
                 #options |= QtWidgets.QFileDialog.DontUseNativeDialog
-                output_file, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as PDF File...', default_output_file,
-                                                                      'PDF File (*.pdf)', options=options)
+                output_file, _ = QtWidgets.QFileDialog.getSaveFileName(self, self.tr('Save as PDF File...'), default_output_file,
+                                                                      self.tr('PDF File (*.pdf)'), options=options)
                 if output_file:
                     self.progressBar.setValue(0)
-                    self.statusBar().showMessage('Building PDF file...')
+                    self.statusBar().showMessage(self.tr('Building PDF file...'))
                     build_pdf_for_glossaries_and_wikis(selectedGlossaries, selectedWikis, output_file,
                                                        lambda no, overall: self.progressBar.setValue(100 / overall * no))
                     # open file with associated application (there is no really
                     # good solution, see https://stackoverflow.com/a/17317468 and
                     # https://stackoverflow.com/a/21987839)
                     webbrowser.open(output_file)
-                    self.statusBar().showMessage('Finished PDF file.')
+                    self.statusBar().showMessage(self.tr('Finished PDF file.'))
             else:
                 logger.error('Not implemented yet!')
-                QtWidgets.QMessageBox.warning(self, 'Error', 'Separate export is not implemented yet.', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+                QtWidgets.QMessageBox.warning(self, self.tr('Error'), self.tr('Separate export is not implemented yet.'), QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
         else:
-            QtWidgets.QMessageBox.warning(self, 'Error', 'You have to select some modules first.', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.warning(self, self.tr('Error'), self.tr('You have to select some modules first.'), QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def showInfoDialog(self):
-        QtWidgets.QMessageBox.information(self, 'About...', 'Moodle2PDF from Christian Wichmann\nSource: https://github.com/wichmann/moodle2pdf', QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+        QtWidgets.QMessageBox.information(self, self.tr('About...'), self.tr('Moodle2PDF from Christian Wichmann\nSource: https://github.com/wichmann/moodle2pdf'),
+                                          QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
 def create_logger():
     global logger
@@ -189,5 +199,8 @@ def create_logger():
 if __name__ == '__main__':
     create_logger()
     app = QtWidgets.QApplication(sys.argv)
+    translator = QtCore.QTranslator()
+    translator.load('translate/{}.qm'.format(QtCore.QLocale.system().name()))
+    app.installTranslator(translator)
     window = Moodle2PdfWindow()
     sys.exit(app.exec_())

@@ -29,18 +29,18 @@ class CredentialsDialog(QtWidgets.QDialog):
     def __init__(self, *args, **kwargs):
         super(CredentialsDialog, self).__init__(*args, **kwargs)
         
-        self.setWindowTitle('Enter credentials...')
+        self.setWindowTitle(self.tr('Enter credentials...'))
         
-        usernameLabel = QtWidgets.QLabel('Username: ')
+        usernameLabel = QtWidgets.QLabel(self.tr('Username: '))
         self.usernameLineEdit = QtWidgets.QLineEdit()
-        self.usernameLineEdit.setPlaceholderText('username')
+        self.usernameLineEdit.setPlaceholderText(self.tr('username'))
         usernameHBox = QtWidgets.QHBoxLayout()
         usernameHBox.addWidget(usernameLabel)
         usernameHBox.addWidget(self.usernameLineEdit)
 
-        passwordLabel = QtWidgets.QLabel('Password: ')
+        passwordLabel = QtWidgets.QLabel(self.tr('Password: '))
         self.passwordLineEdit = QtWidgets.QLineEdit()
-        self.passwordLineEdit.setPlaceholderText('password')
+        self.passwordLineEdit.setPlaceholderText(self.tr('password'))
         self.passwordLineEdit.setEchoMode(QtWidgets.QLineEdit.Password)
         passwordHBox = QtWidgets.QHBoxLayout()
         passwordHBox.addWidget(passwordLabel)
