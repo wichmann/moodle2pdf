@@ -78,28 +78,23 @@ def substitute_lists(bs):
 
 
 def build_pdf_for_glossary(glossary_id, glossary_name, temp_dir):
-    #question_paragraph_style = ParagraphStyle(name='Normal', fontName='Helvetica-Bold', fontSize=11)
-    #answer_paragraph_style = ParagraphStyle(name='Normal', fontName='Helvetica', fontSize=11, embeddedHyphenation=1, linkUnderline=1)
+    #
+    # Some string include Unicode byte order marker ('\ufeff') to get the PDF
+    # library to interpret them correctly. Without those markers non-ASCII
+    # characters like German umlauts are not displyed correctly in the created
+    # PDF file.
+    #
     part = []
     logger.info('Loading glossary: {} - {}'.format(glossary_id, glossary_name))
     # create heading
-    heading =  document.pisaStory('<h1>{}</h1>'.format(glossary_name)).story
+    heading =  document.pisaStory('\ufeff<h1>{}</h1>'.format(glossary_name)).story
     part.extend(heading)
     # build paragraphs for questions
     for question, answer in moodle.get_entries_for_glossary(glossary_id, temp_dir):
-        #
-        part.extend(document.pisaStory('<h2>{}</h2>'.format(question)).story)
-        bs = BeautifulSoup(answer, features='html.parser')
+        part.extend(document.pisaStory('\ufeff<h2>{}</h2>'.format(question)).story)
+        bs = BeautifulSoup(answer, features='html.parser') # 'lxml', 'html5lib'
         filter_for_xhtml2pdf(bs, temp_dir)
-        part.extend(document.pisaStory(str(bs)).story)
-        #
-        #bs = BeautifulSoup(answer, features='html5lib')  # 'lxml', 'html5lib'
-        #filter_html(bs)
-        #image_list = extract_images(bs, temp_dir)
-        #substitute_lists(bs)
-        #part.append(KeepTogether([Paragraph(question, question_paragraph_style),
-        #                          Paragraph(str(bs), answer_paragraph_style),
-        #                          Spacer(0, 0.25*cm), *image_list, Spacer(0, 0.75*cm)]))      
+        part.extend(document.pisaStory('\ufeff{}'.format(bs)).story)
     part.append(PageBreak())
     return part
 
@@ -108,14 +103,15 @@ def build_pdf_for_wiki(wiki_id, wiki_name, temp_dir):
     part = []
     logger.info('Loading wiki: {} - {}'.format(wiki_id, wiki_name))
     # create heading
-    heading =  document.pisaStory('<h1>{}</h1>'.format(wiki_name)).story
+    heading =  document.pisaStory('\ufeff<h1>{}</h1>'.format(wiki_name)).story
     part.extend(heading)
     # build paragraphs for questions
     for page_id, page_name, page_content in moodle.get_subwiki_pages(wiki_id):
-        part.extend(document.pisaStory('<h2>{}</h2>'.format(page_name)).story)
+        part.extend(document.pisaStory('\ufeff<h2>{}</h2>'.format(page_name)).story)
         bs = BeautifulSoup(page_content, features='html.parser')
-    #    filter_for_xhtml2pdf(bs, temp_dir)
-        part.extend(document.pisaStory(str(bs)).story)
+        # TODO: Handle if image is external link to another site.
+        filter_for_xhtml2pdf(bs, temp_dir)
+        part.extend(document.pisaStory('\ufeff{}'.format(bs)).story)
     part.append(PageBreak())
     return part
 
