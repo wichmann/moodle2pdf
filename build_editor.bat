@@ -1,10 +1,32 @@
 pyinstaller --noconfirm ^
     --log-level=WARN ^
-    --clean ^
+	--clean ^
 	--windowed ^
-	--icon=".\res\moodle.ico" ^
 	--onefile ^
+	--icon=".\res\moodle.ico" ^
 	--add-data="moodleeditor.ui;." ^
 	--add-data="res;res\." ^
 	--add-data="config.toml;." ^
+	--exclude-module tkinter ^
+	--exclude-module sqlite ^
+	--exclude-module PyQt5.QtDesigner ^
+	--exclude-module PyQt5.QtMultimedia ^
+	--exclude-module PyQt5.QtMultimediaWidgets ^
+	--exclude-module PyQt5.QtNetwork ^
+	--exclude-module PyQt5.QtBluetooth ^
+	--exclude-module PyQt5.QtPrintSupport ^
+	--exclude-module PyQt5.QtNetworkAuth ^
+	--exclude-module PyQt5.QtNfc ^
+	--exclude-module PyQt5.QtQml ^
+	--exclude-module PyQt5.QtSql ^
+	--exclude-module PyQt5.QtQuick ^
+	--exclude-module PyQt5.QtSensors ^
+	--exclude-module PyQt5.QtSerialPort ^
+	--exclude-module PyQt5.QtXml ^
+	--exclude-module PyQt5.QtXmlPatterns ^
+	--exclude-module PyQt5.QtQuickWidgets ^
+	--exclude-module PyQt5.QtOpenGL ^
+	--exclude-module PyQt5.QtHelp ^
+	--exclude-module PyQt5.QtDBus ^
+	--exclude-module PyQt5.QtLocation ^
     moodleeditor.py
