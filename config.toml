@@ -5,7 +5,7 @@ log_filename = 'moodle2pdf.log'
 [pdf]
 default_output_filename = 'FAQ.pdf'
 author = 'Christian Wichmann'
-title = 'Häufig gestellte Fragen - Logodidact und Moodle'
+title = 'Häufig gestellte Fragen'
 border_horizontal = 2.0
 border_vertical = 1.5
 

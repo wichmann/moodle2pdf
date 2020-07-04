@@ -6,7 +6,7 @@ from reportlab.lib.units import cm
 from reportlab.lib.pagesizes import A4
 
 
-with open('config.toml') as f:
+with open('config.toml', encoding='utf-8') as f:
     CONFIG = toml.loads(f.read())
 
 
