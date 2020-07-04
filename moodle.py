@@ -24,7 +24,7 @@ def rest_api_parameters(in_args, prefix='', out_dict=None):
     {'courses[0][id]':1,
      'courses[0][name]':'course1'}
     """
-    if out_dict == None:
+    if out_dict is None:
         out_dict = {}
     if not type(in_args) in (list, dict):
         out_dict[prefix] = in_args
@@ -52,10 +52,9 @@ def call_mdl_function(fname, **kwargs):
                            courses = [{'id': 1, 'fullname': 'My favorite course'}])
     """
     parameters = rest_api_parameters(kwargs)
-    parameters.update( {'wstoken': CONFIG['moodle']['token'],
-                        'moodlewsrestformat': 'json', 'wsfunction': fname} )
-    response = requests.post(urllib.parse.urljoin(CONFIG['moodle']['url'], CONFIG['moodle']['endpoint']),
-                             parameters)
+    parameters.update({'wstoken': CONFIG['moodle']['token'],
+                       'moodlewsrestformat': 'json', 'wsfunction': fname})
+    response = requests.post(urllib.parse.urljoin(CONFIG['moodle']['url'], CONFIG['moodle']['endpoint']), parameters)
     logger.debug('Response Encoding: {}, Best guess: {}'.format(response.encoding, response.apparent_encoding))
     response = response.json()
     if type(response) == dict and response.get('exception'):
@@ -112,7 +111,8 @@ def get_content_for_course(courseid):
     result = []
     for c in content:
         for m in c['modules']:
-            result.append( (c['id'], c['name'], m['id'], m['name'], m['modname'], m['visible'], m['uservisible'], m['visibleoncoursepage'], m['modicon'] ) )
+            result.append((c['id'], c['name'], m['id'], m['name'], m['modname'], m['visible'], m['uservisible'],
+                          m['visibleoncoursepage'], m['modicon']))
     return result
 
 
@@ -120,16 +120,14 @@ def get_content_for_course(courseid):
 
 def get_glossaries_from_course(courseid):
     id_list = []
-    response = call_mdl_function('mod_glossary_get_glossaries_by_courses',
-                    courseids=[courseid])
+    response = call_mdl_function('mod_glossary_get_glossaries_by_courses', courseids=[courseid])
     for g in response['glossaries']:
         id_list.append((g['id'], g['name']))
     return id_list
 
 
 def get_entries_for_glossary(glossary_id, directory):
-    entries = call_mdl_function('mod_glossary_get_entries_by_letter',
-                   id=glossary_id, letter='ALL', limit=1000)
+    entries = call_mdl_function('mod_glossary_get_entries_by_letter', id=glossary_id, letter='ALL', limit=1000)
     with open(os.path.join(directory, 'loaded_data_{}.xml'.format(glossary_id)), 'w', encoding='utf8') as f:
         f.write(str(entries))
     no = entries['count']
@@ -139,6 +137,41 @@ def get_entries_for_glossary(glossary_id, directory):
             logger.info('Found attachment for entry: {}'.format(a))
     for e in entries['entries']:
         yield (e['concept'], e['definition'])
+
+
+############################## Database functions #############################
+
+def get_databases_by_courses(courseid):
+    id_list = []
+    response = call_mdl_function('mod_data_get_databases_by_courses', courseids=[courseid])
+    for d in response['databases']:
+        id_list.append((d['id'], d['name'], d['singletemplate'], d['listtemplate']))  # d['intro']???
+    return id_list
+
+
+def get_fields_for_database(databaseid):
+    response = call_mdl_function('mod_data_get_fields', databaseid=databaseid)
+    return [(f['type'], f['name'], f['description']) for f in response['fields']]
+
+
+def get_entries_for_database(databaseid):
+    entry_list = []
+    # get field names and types
+    fields = get_fields_for_database(databaseid)
+    # get entries
+    entries = call_mdl_function('mod_data_get_entries', databaseid=databaseid, returncontents='1')
+    no = entries['totalcount']
+    logger.info('Found {} entries in glossary.'.format(no))
+    # handle all entries
+    for e in entries['entries']:
+        entry_data = {'id': e['id'], 'files': {}}
+        for i, d in enumerate(e['contents']):
+            entry_data[fields[i][1]] = d['content']
+            for f in d['files']:
+                entry_data['files'][f['filename']] = f['fileurl']
+                logger.info('Found attached file for database entry: {} (URL: {})'.format(f['filename'], f['fileurl']))
+        entry_list.append(entry_data)
+    return entry_list
 
 
 ################################ Wiki functions #################################
@@ -167,26 +200,39 @@ def get_subwiki_pages(wikiid):
         id_list.append((p['id'], p['title'], p['cachedcontent']))
     return id_list
 
-############################## Miscellaneous functions ##############################
+########################### Miscellaneous functions ###########################
+
 
 def edit_module(action, module_id):
     """
-    Performs an action on course module (change visibility, duplicate, delete, etc.)
-    
-    Parameter "action": hide, show, stealth, duplicate, delete, moveleft, moveright, group...
+    Performs an action on course module (change visibility, duplicate, delete,
+    etc.)
+
+    Parameter "action": hide, show, stealth, duplicate, delete, moveleft,
+                        moveright, group...
     Parameter "sectionreturn" defaults to null
     """
-    response = call_mdl_function('core_course_edit_module', action=action, id=module_id) 
-    new_html = response
-    return new_html
+    try:
+        response = call_mdl_function('core_course_edit_module', action=action, id=module_id)
+        new_html = response
+        return True
+    except SystemError as e:
+        # SystemError: ('Error calling Moodle API',
+        # {'exception': 'required_capability_exception',
+        #  'errorcode': 'nopermissions',
+        #  'message': 'Sie haben derzeit keine Rechte, dies zu tun
+        #              (Aktivitäten anzeigen / verbergen).'})
+        if 'Sie haben derzeit keine Rechte' in e.args[1]['message']:
+            logger.error('No permission to edit the given module!')
+        return False
 
 
 def hide_module(module_id):
-    edit_module('hide', module_id)
+    return edit_module('hide', module_id)
 
 
 def show_module(module_id):
-    edit_module('show', module_id)
+    return edit_module('show', module_id)
 
 
 def get_string(stringid, component, lang):
@@ -202,11 +248,12 @@ def get_string(stringid, component, lang):
     id_list = []
     response = call_mdl_function('core_get_string', stringid=stringid, component=component, lang=lang)
     print(response)
-    #for s in response['subwikis']:
-    #    id_list.append((s['id'], s['wikiid']))
+    # for s in response['subwikis']:
+    #     id_list.append((s['id'], s['wikiid']))
     return id_list
 
 
-#core_user_create_users
-#core_message_get_messages
-#core_course_edit_section    # Performs an action on course section (change visibility, set marker, delete)
+# TODO:
+# core_user_create_users
+# core_message_get_messages
+# core_course_edit_section    # Performs an action on course section (change visibility, set marker, delete)
