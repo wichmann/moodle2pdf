@@ -88,7 +88,7 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
 
     def addSlotsAndSignals(self):
         self.moodleItemsTreeWidget.itemDoubleClicked.connect(self.handleClick)
-        self.exportButton.clicked.connect(self.exportGlossaries)
+        self.exportButton.clicked.connect(self.exportSelectedModules)
         self.actionInfo.triggered.connect(self.showInfoDialog)
         self.actionSet_Site.triggered.connect(self.showSiteDialog)
 
@@ -102,6 +102,7 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
             id, _ = item.data(0, QtCore.Qt.UserRole)
             self.populateGlossaries(item, id)
             self.populateWikis(item, id)
+            self.populateDatabases(item, id)
 
     def showSiteDialog(self):
         self.statusBar().showMessage(self.tr('Logging in to Moodle site...'))
@@ -146,9 +147,23 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
         self.statusBar().showMessage(self.tr('All wikis loaded.'))
         item.setExpanded(True)
 
-    def exportGlossaries(self):
+    def populateDatabases(self, item, course_id):
+        self.statusBar().showMessage(self.tr('Loading all databases for course...'))
+        databases = moodle.get_databases_by_courses(course_id)
+        for d in databases:
+            databaseNode = QtWidgets.QTreeWidgetItem(item)
+            databaseNode.setText(0, d[1])
+            databaseNode.setData(0, QtCore.Qt.UserRole, d)
+            databaseNode.setCheckState(0, QtCore.Qt.Unchecked)
+            databaseNode.moodleType = 'database'
+            databaseNode.setIcon(0, QtGui.QIcon(get_resource_path('res/database.svg')))
+        self.statusBar().showMessage(self.tr('All databases loaded.'))
+        item.setExpanded(True)
+
+    def exportSelectedModules(self):
         selectedGlossaries = []
         selectedWikis = []
+        selectedDatabases = []
         for item in self.moodleItemsTreeWidget.findItems('', QtCore.Qt.MatchContains | QtCore.Qt.MatchRecursive, 0):
             if item.checkState(0) > 0:
                 moodleItem = item.data(0, QtCore.Qt.UserRole)
@@ -158,32 +173,40 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
                 elif item.moodleType == 'glossary':
                     logger.debug('Glossary selected: {}'.format(moodleItem[1]))
                     selectedGlossaries.append(moodleItem)
-        if selectedGlossaries or selectedWikis:
+                elif item.moodleType == 'database':
+                    logger.debug('Database selected: {}'.format(moodleItem[1]))
+                    selectedDatabases.append(moodleItem)
+        if selectedGlossaries or selectedWikis or selectedDatabases:
             if self.combineGlossariesCheckBox.checkState() > 0:
                 default_output_file = CONFIG['pdf']['default_output_filename']
                 options = QtWidgets.QFileDialog.Options()
-                #options |= QtWidgets.QFileDialog.DontUseNativeDialog
-                output_file, _ = QtWidgets.QFileDialog.getSaveFileName(self, self.tr('Save as PDF File...'), default_output_file,
-                                                                      self.tr('PDF File (*.pdf)'), options=options)
+                # options |= QtWidgets.QFileDialog.DontUseNativeDialog
+                output_file, _ = QtWidgets.QFileDialog.getSaveFileName(self, self.tr('Save as PDF File...'),
+                                                                       default_output_file, self.tr('PDF File (*.pdf)'),
+                                                                       options=options)
                 if output_file:
                     self.progressBar.setValue(0)
                     self.statusBar().showMessage(self.tr('Building PDF file...'))
-                    build_pdf_for_glossaries_and_wikis(selectedGlossaries, selectedWikis, output_file,
-                                                       lambda no, overall: self.progressBar.setValue(100 / overall * no))
-                    # open file with associated application (there is no really
-                    # good solution, see https://stackoverflow.com/a/17317468 and
-                    # https://stackoverflow.com/a/21987839)
+                    build_pdf_for_glossaries_and_wikis(selectedGlossaries, selectedWikis, selectedDatabases, output_file,
+                                                       lambda no, overall: self.progressBar.setValue(int(100 / overall * no)))
+                    # open file with associated application (there is no really good solution,
+                    # see https://stackoverflow.com/a/17317468 and https://stackoverflow.com/a/21987839)
                     webbrowser.open(output_file)
                     self.statusBar().showMessage(self.tr('Finished PDF file.'))
             else:
                 logger.error('Not implemented yet!')
-                QtWidgets.QMessageBox.warning(self, self.tr('Error'), self.tr('Separate export is not implemented yet.'), QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+                QtWidgets.QMessageBox.warning(self, self.tr('Error'),
+                                              self.tr('Separate export is not implemented yet.'),
+                                              QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
         else:
-            QtWidgets.QMessageBox.warning(self, self.tr('Error'), self.tr('You have to select some modules first.'), QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.warning(self, self.tr('Error'), self.tr('You have to select some modules first.'),
+                                          QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def showInfoDialog(self):
-        QtWidgets.QMessageBox.information(self, self.tr('About...'), self.tr('Moodle2PDF from Christian Wichmann\nSource: https://github.com/wichmann/moodle2pdf'),
+        QtWidgets.QMessageBox.information(self, self.tr('About...'),
+                                          self.tr('Moodle2PDF from Christian Wichmann\nSource: https://github.com/wichmann/moodle2pdf'),
                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+
 
 def create_logger():
     global logger
