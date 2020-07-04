@@ -1,18 +1,14 @@
 
-import os
 import logging
 import tempfile
 from itertools import chain
 
 from bs4 import BeautifulSoup
 from xhtml2pdf import document
-from reportlab.lib.styles import ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Image
-from reportlab.platypus.flowables import KeepTogether
-from reportlab.platypus.tableofcontents import TableOfContents
+from reportlab.platypus import SimpleDocTemplate, PageBreak, Image
 
 import moodle
-from config import CONFIG, BORDER_HORIZONTAL, BORDER_VERTICAL, PAGE_HEIGHT, PAGE_WIDTH
+from config import CONFIG, BORDER_HORIZONTAL, BORDER_VERTICAL, PAGE_WIDTH
 
 
 logger = logging.getLogger('moodle2pdf.pdf')
@@ -22,7 +18,7 @@ def create_page_margins(canvas, doc):
     canvas.saveState()
     canvas.setFont('Helvetica', 10)
     canvas.drawString(BORDER_HORIZONTAL, BORDER_VERTICAL, CONFIG['pdf']['title'])
-    canvas.drawRightString(PAGE_WIDTH-BORDER_HORIZONTAL,
+    canvas.drawRightString(PAGE_WIDTH - BORDER_HORIZONTAL,
                            BORDER_VERTICAL, "Seite {}".format(doc.page))
     canvas.restoreState()
 
@@ -45,8 +41,8 @@ def extract_images(bs, directory):
         tag['width'] = str(width)
         height = int(float(tag['height']) * SCALING_FACTOR)
         tag['height'] = str(height)
-        #tag['valign'] = 'super' # 'baseline', 'sub', 'super', 'top', 'text-top', 'middle', 'bottom', 'text-bottom', '0%', '2in'
-        #tag.parent['spaceAfter'] = '2cm'
+        # tag['valign'] = 'super', 'baseline', 'sub', 'super', 'top', 'text-top', 'middle', 'bottom', 'text-bottom', '0%', '2in'
+        # tag.parent['spaceAfter'] = '2cm'
         tag.decompose()
         i = Image(image_file, width=width, height=height)
         i.vAlign = 'TOP'
@@ -73,7 +69,6 @@ def substitute_lists(bs):
             tag.insert(0, bullet)
             tag.append('<br>')
             tag.name = 'p'
-        #list_tag.name = 'div'
         print(list_tag)
 
 
@@ -87,12 +82,12 @@ def build_pdf_for_glossary(glossary_id, glossary_name, temp_dir):
     part = []
     logger.info('Loading glossary: {} - {}'.format(glossary_id, glossary_name))
     # create heading
-    heading =  document.pisaStory('\ufeff<h1>{}</h1>'.format(glossary_name)).story
+    heading = document.pisaStory('\ufeff<h1>{}</h1>'.format(glossary_name)).story
     part.extend(heading)
     # build paragraphs for questions
     for question, answer in moodle.get_entries_for_glossary(glossary_id, temp_dir):
         part.extend(document.pisaStory('\ufeff<h2>{}</h2>'.format(question)).story)
-        bs = BeautifulSoup(answer, features='html.parser') # 'lxml', 'html5lib'
+        bs = BeautifulSoup(answer, features='html.parser')  # 'lxml', 'html5lib'
         filter_for_xhtml2pdf(bs, temp_dir)
         part.extend(document.pisaStory('\ufeff{}'.format(bs)).story)
     part.append(PageBreak())
@@ -103,7 +98,7 @@ def build_pdf_for_wiki(wiki_id, wiki_name, temp_dir):
     part = []
     logger.info('Loading wiki: {} - {}'.format(wiki_id, wiki_name))
     # create heading
-    heading =  document.pisaStory('\ufeff<h1>{}</h1>'.format(wiki_name)).story
+    heading = document.pisaStory('\ufeff<h1>{}</h1>'.format(wiki_name)).story
     part.extend(heading)
     # build paragraphs for questions
     for page_id, page_name, page_content in moodle.get_subwiki_pages(wiki_id):
@@ -116,19 +111,47 @@ def build_pdf_for_wiki(wiki_id, wiki_name, temp_dir):
     return part
 
 
-def build_pdf_for_glossaries_and_wikis(glossaries, wikis, output_file, callback=None):
-    """
-    Creates a PDF file from Moodle glossaries accessed by Moodle Web Service.
+def build_pdf_for_database(database_id, database_name, temp_dir):
+    part = []
+    logger.info('Loading database: {} - {}'.format(database_id, database_name))
+    # create heading
+    heading = document.pisaStory('\ufeff<h1>{}</h1>'.format(database_name)).story
+    part.extend(heading)
+    # build paragraphs for questions
+    for entry in moodle.get_entries_for_database(database_id):
+        entry_heading = document.pisaStory('\ufeff<h2>Eintrag: {}</h2>'.format(entry['id'])).story
+        part.extend(entry_heading)
+        for k, v in entry.items():
+            # exclude file list
+            if k != 'files' and k != 'id':
+                if v in entry['files']:
+                    image_file_name = moodle.download_image(entry['files'][v], temp_dir)
+                    part.append(Image(image_file_name))  # , width=width, height=height)
+                else:
+                    part.extend(document.pisaStory('\ufeff<h3>{}</h3><p>{}</p>'.format(k, v)).story)
+        # bs = BeautifulSoup(page_content, features='html.parser')
+        # filter_for_xhtml2pdf(bs, temp_dir)
+        # part.extend(document.pisaStory('\ufeff{}'.format(bs)).story)
+    part.append(PageBreak())
+    return part
 
-    :param glossaries: tuple of id and name for a single glossary or a list of
-                       tuples for all glossaries
+
+def build_pdf_for_glossaries_and_wikis(glossaries, wikis, databases, output_file, callback=None):
+    """
+    Creates a PDF file from Moodle glossaries, wikis and databases accessed by Moodle Web Service.
+
+    :param glossaries: list of glossaries to be exported, each entry containing a tuple of (at least) the id and name
+                       for the glossary
+    :param wikis: list of wikis to be exported, each entry containing a tuple of (at least) the id and name for a wiki
+    :param databases: list of databases to be exported, each entry containing a tuple of (at least) the id and name for
+                      the database
     :param output_file: file name for output PDF file
     """
-    logger.info('Creating PDF file from Moodle Glossar...')
+    logger.info('Creating PDF file from Moodle Modules...')
     document = SimpleDocTemplate(output_file, author=CONFIG['pdf']['author'], title=CONFIG['pdf']['title'])
     story = []
     no = 0
-    overall = len(glossaries) + len(wikis)
+    overall = len(glossaries) + len(wikis) + len(databases)
     if callback and callable(callback):
         callback(no, overall)
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -146,15 +169,22 @@ def build_pdf_for_glossaries_and_wikis(glossaries, wikis, output_file, callback=
                 no += 1
                 if callback and callable(callback):
                     callback(no, overall)
+        if databases:
+            for database_id, database_name, _, _ in databases:
+                logger.info('Adding database no. {}: {}'.format(database_id, database_name))
+                story.extend(build_pdf_for_database(database_id, database_name, temp_dir))
+                no += 1
+                if callback and callable(callback):
+                    callback(no, overall)
         logger.info('Writing Moodle glossar to PDF file: {}.'.format(output_file))
         document.build(story, onFirstPage=create_page_margins, onLaterPages=create_page_margins)
 
 
-def make_pdf_from_moodle(glossaries=None, wikis=None, combine_to_one_document=False):
+def make_pdf_from_moodle(glossaries=None, wikis=None, databases=None, combine_to_one_document=False):
     if combine_to_one_document:
         output_file = CONFIG['pdf']['default_output_filename']
-        build_pdf_for_glossaries_and_wikis(glossaries, wikis, output_file)
+        build_pdf_for_glossaries_and_wikis(glossaries, wikis, databases, output_file)
     else:
         logger.error('NOT IMPLEMENTED YET!')
-        #output_file = '{}.pdf'.format(f)
-        #create_pdf_doc_online((f, ), output_file)
+        # output_file = '{}.pdf'.format(f)
+        # create_pdf_doc_online((f, ), output_file)
