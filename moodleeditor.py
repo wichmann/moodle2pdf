@@ -11,7 +11,7 @@ import tempfile
 import logging.handlers
 
 import requests
-from PyQt5 import QtGui, QtWidgets, Qt, uic, QtCore
+from PyQt5 import QtGui, QtWidgets, uic, QtCore
 
 import moodle
 from config import CONFIG
@@ -26,7 +26,7 @@ class MoodleEditor(QtWidgets.QMainWindow):
     def __init__(self):
         super(MoodleEditor, self).__init__()
         uic.loadUi(get_resource_path('moodleeditor.ui'), self)
-        
+
         self.tempDir = tempfile.TemporaryDirectory()
         self.iconMap = {}
 
@@ -77,6 +77,7 @@ class MoodleEditor(QtWidgets.QMainWindow):
                     moodleItem = child.data(0, QtCore.Qt.UserRole)
                     id = moodleItem[2]
                     checked = changedItem.checkState(1)
+                    # TODO: Handle return value of changeVisibilityForModule().
                     self.changeVisibilityForModule(id, checked)
                     if checked > 0:
                         child.setCheckState(1, QtCore.Qt.Checked)
@@ -115,7 +116,8 @@ class MoodleEditor(QtWidgets.QMainWindow):
         DEFAULT_SITE_URL = 'https://moodle.nibis.de/bbs_osb/'
         text, okPressed = QtWidgets.QInputDialog.getText(self, self.tr('Enter site URL'), self.tr('Site URL:'),
                                                          QtWidgets.QLineEdit.Normal, DEFAULT_SITE_URL)
-        # check for valid URLs via RegEx (see https://daringfireball.net/2010/07/improved_regex_for_matching_urls and https://gist.github.com/gruber/8891611)
+        # check for valid URLs via RegEx (see https://daringfireball.net/2010/07/improved_regex_for_matching_urls and
+        # https://gist.github.com/gruber/8891611)
         # reg_ex = QtCore.QRegExp("""(?i)\b((?:https:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)/)(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)\b/?(?!@)))""")
         # input_validator = QRegExpValidator(reg_ex, self.le_input)
         # self.le_input.setValidator(input_validator)
@@ -139,10 +141,10 @@ class MoodleEditor(QtWidgets.QMainWindow):
             courseNode = QtWidgets.QTreeWidgetItem(self.siteNode)
             courseNode.setText(0, c[1])
             courseNode.setData(0, QtCore.Qt.UserRole, c)
-            #courseNode.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+            # courseNode.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
             courseNode.setIcon(0, QtGui.QIcon(get_resource_path('res/course.svg')))
-            self.progressBar.setValue(100 / len(courses) * (i + 1))
-            #QtGui.qApp.processEvents()
+            self.progressBar.setValue(int(100 / len(courses) * (i + 1)))
+            # QtGui.qApp.processEvents()
         self.siteNode.setExpanded(True)
 
     def removeCourses(self):
@@ -153,9 +155,9 @@ class MoodleEditor(QtWidgets.QMainWindow):
     def changeVisibilityForModule(self, id, checked):
         logger.info('Changed visibility of module {} to {}'.format(id, checked))
         if checked > 0:
-            moodle.show_module(id)
+            return moodle.show_module(id)
         else:
-            moodle.hide_module(id)
+            return moodle.hide_module(id)
 
     def populateActivities(self, topItem, course_id):
         self.statusBar().showMessage(self.tr('Loading all modules for course...'))
@@ -171,7 +173,7 @@ class MoodleEditor(QtWidgets.QMainWindow):
                 activitiesNode.setCheckState(1, QtCore.Qt.Checked)
             elif a[5] == 0:
                 activitiesNode.setCheckState(1, QtCore.Qt.Unchecked)
-            self.progressBar.setValue(100 / len(activities) * (i + 1))
+            self.progressBar.setValue(int(100 / len(activities) * (i + 1)))
         topItem.setExpanded(True)
         self.userCanChoose = True
         self.statusBar().showMessage(self.tr('All modules loaded.'))
@@ -209,8 +211,10 @@ class MoodleEditor(QtWidgets.QMainWindow):
                 return get_resource_path('res/home.svg')
 
     def showInfoDialog(self):
-        QtWidgets.QMessageBox.information(self, self.tr('About...'), self.tr('MoodleEditor from Christian Wichmann\nSource: https://github.com/wichmann/moodle2pdf'),
+        info_text = 'MoodleEditor from Christian Wichmann\nSource: https://github.com/wichmann/moodle2pdf'
+        QtWidgets.QMessageBox.information(self, self.tr('About...'), self.tr(info_text),
                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+
 
 def create_logger():
     global logger
