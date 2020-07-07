@@ -5,7 +5,7 @@ from itertools import chain
 
 from bs4 import BeautifulSoup
 from xhtml2pdf import document
-from reportlab.platypus import SimpleDocTemplate, PageBreak, Image
+from reportlab.platypus import SimpleDocTemplate, PageBreak, Image, HRFlowable
 
 import moodle
 from config import CONFIG, BORDER_HORIZONTAL, BORDER_VERTICAL, PAGE_WIDTH
@@ -93,6 +93,8 @@ def build_pdf_for_glossary(glossary_id, glossary_name, temp_dir):
         bs = BeautifulSoup(answer, features='html.parser')  # 'lxml', 'html5lib'
         filter_for_xhtml2pdf(bs, temp_dir)
         part.extend(document.pisaStory('\ufeff{}'.format(bs)).story)
+        # insert divider between entries (see https://stackoverflow.com/a/36112136)
+        part.append(HRFlowable(width='40%', thickness=2, color='darkgray'))
     part.append(PageBreak())
     return part
 
