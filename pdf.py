@@ -85,7 +85,7 @@ def build_pdf_for_glossary(glossary_id, glossary_name, temp_dir):
     part = []
     logger.info('Loading glossary: {} - {}'.format(glossary_id, glossary_name))
     # create heading
-    heading = document.pisaStory('\ufeff<h1>{}</h1>'.format(glossary_name)).story
+    heading = document.pisaStory('\ufeff<h1>{} (Glossar)</h1>'.format(glossary_name)).story
     part.extend(heading)
     # build paragraphs for questions
     for question, answer in moodle.get_entries_for_glossary(glossary_id, temp_dir):
@@ -95,6 +95,8 @@ def build_pdf_for_glossary(glossary_id, glossary_name, temp_dir):
         part.extend(document.pisaStory('\ufeff{}'.format(bs)).story)
         # insert divider between entries (see https://stackoverflow.com/a/36112136)
         part.append(HRFlowable(width='40%', thickness=2, color='darkgray'))
+    # pop last divider
+    part.pop()
     part.append(PageBreak())
     return part
 
@@ -103,7 +105,7 @@ def build_pdf_for_wiki(wiki_id, wiki_name, temp_dir):
     part = []
     logger.info('Loading wiki: {} - {}'.format(wiki_id, wiki_name))
     # create heading
-    heading = document.pisaStory('\ufeff<h1>{}</h1>'.format(wiki_name)).story
+    heading = document.pisaStory('\ufeff<h1>{} (Wiki)</h1>'.format(wiki_name)).story
     part.extend(heading)
     # build paragraphs for questions
     for page_id, page_name, page_content in moodle.get_subwiki_pages(wiki_id):
@@ -120,7 +122,7 @@ def build_pdf_for_database(database_id, database_name, temp_dir):
     part = []
     logger.info('Loading database: {} - {}'.format(database_id, database_name))
     # create heading
-    heading = document.pisaStory('\ufeff<h1>{}</h1>'.format(database_name)).story
+    heading = document.pisaStory('\ufeff<h1>{} (Datenbank)</h1>'.format(database_name)).story
     part.extend(heading)
     # build paragraphs for questions
     for entry in moodle.get_entries_for_database(database_id):
