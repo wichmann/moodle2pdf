@@ -178,7 +178,8 @@ class Moodle2PdfWindow(QtWidgets.QMainWindow):
                     selectedDatabases.append(moodleItem)
         if selectedGlossaries or selectedWikis or selectedDatabases:
             if self.combineGlossariesCheckBox.checkState() > 0:
-                default_output_file = CONFIG['pdf']['default_output_filename']
+                all_modules = selectedDatabases + selectedGlossaries + selectedWikis
+                default_output_file = CONFIG['pdf']['default_output_filename'] if len(all_modules) > 1 else '{}.pdf'.format(all_modules[0][1])
                 options = QtWidgets.QFileDialog.Options()
                 # options |= QtWidgets.QFileDialog.DontUseNativeDialog
                 output_file, _ = QtWidgets.QFileDialog.getSaveFileName(self, self.tr('Save as PDF File...'),
