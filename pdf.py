@@ -58,6 +58,9 @@ def filter_for_xhtml2pdf(bs, directory):
     for tag in bs.findAll('br'):
         # remove all seperate line breaks and trust that all paragraphs are formatted with the <p> tag
         tag.decompose()
+    for tag in bs.find_all(type=True):
+        # change all types in lists and enumerations to 'circle'
+        tag['type'] = 'circle'
 
 
 def substitute_lists(bs):
