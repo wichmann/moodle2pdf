@@ -67,10 +67,15 @@ def download_image(link, directory):
         download_image.counter += 1
     except AttributeError:
         download_image.counter = 1
-    parameters = {'token': CONFIG['moodle']['token']}
     logger.info('Loading image from {}'.format(link))
-    response = requests.post(link, parameters)
-    only_file_name = 'image{}.png'.format(download_image.counter)
+    if CONFIG['moodle']['url'] in link:
+        # get image file from Moodle by POST request with auth token
+        parameters = {'token': CONFIG['moodle']['token']}
+        response = requests.post(link, parameters)
+    else:
+        # get external image with a simple GET request
+        response = requests.get(link)
+    only_file_name = 'image{}'.format(download_image.counter)
     image_file_name_on_disk = os.path.join(directory, only_file_name)
     with open(image_file_name_on_disk, 'wb') as image_on_disk:
         image_on_disk.write(response.content)
